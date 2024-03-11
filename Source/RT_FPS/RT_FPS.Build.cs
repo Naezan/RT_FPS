@@ -10,6 +10,11 @@ public class RT_FPS : ModuleRules
 
         PublicIncludePaths.AddRange(new string[] { "RT_FPS" });
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
-	}
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
+        "GameplayAbilities", "GameplayTags", "GameplayTasks", "AIModule" });
+
+        PrivateDependencyModuleNames.AddRange(
+            new string[] { "NetCore" }
+        );
+    }
 }

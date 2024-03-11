@@ -5,14 +5,16 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "AbilitySystem/RFAbilitySystemComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "RFEquipmentComponent.h"
 #include "ProceduralAnimComponent.h"
 #include "RFWeaponInstance.h"
-
-DEFINE_LOG_CATEGORY(RFLogCharacter);
+#include "RFPlayerState.h"
+#include "RFPlayerData.h"
+#include "RFLogMacros.h"
 
 // Sets default values
 ARFCharacter::ARFCharacter()
@@ -76,6 +78,16 @@ ARFCharacter::ARFCharacter()
 	ProceduralAnimComponent = CreateDefaultSubobject<UProceduralAnimComponent>(TEXT("ProceduralAnimComponent"));
 }
 
+void ARFCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (ARFPlayerState* PS = GetRFPlayerState())
+	{
+		AbilitySystemComponent = PS->GetRFAbilitySystemComponent();
+	}
+}
+
 // Called when the game starts or when spawned
 void ARFCharacter::BeginPlay()
 {
@@ -123,18 +135,18 @@ void ARFCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	}
 	else
 	{
-		UE_LOG(RFLogCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input Component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+		UE_LOG(LogRF, Error, TEXT("'%s' Failed to find an Enhanced Input Component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
 }
 
 void ARFCharacter::EquipWeapon()
 {
-	if (bHasWeapon || EquipWeaponInstance == nullptr)
+	if (bHasWeapon)
 	{
 		return;
 	}
 
-	if (EquipmentComponent->OnEquip(EquipWeaponInstance))
+	if (EquipmentComponent->OnEquip(GetWeaoponInstance()))
 	{
 		bHasWeapon = true;
 	}
@@ -187,4 +199,22 @@ void ARFCharacter::SetHasWeapon(bool bNewHasWeapon)
 bool ARFCharacter::GetHasWeapon()
 {
 	return bHasWeapon;
+}
+
+const TSubclassOf<URFWeaponInstance> ARFCharacter::GetWeaoponInstance() const
+{
+	if (ARFPlayerState* PS = GetPlayerState<ARFPlayerState>())
+	{
+		if (const URFPlayerData* PlayerData = PS->GetPlayerData())
+		{
+			return PlayerData->EquipWeaponInstance;
+		}
+	}
+
+	return nullptr;
+}
+
+ARFPlayerState* ARFCharacter::GetRFPlayerState() const
+{
+	return GetPlayerState<ARFPlayerState>();
 }

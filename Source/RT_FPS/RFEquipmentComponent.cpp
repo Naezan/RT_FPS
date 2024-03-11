@@ -3,6 +3,7 @@
 
 #include "RFEquipmentComponent.h"
 #include "RFWeaponInstance.h"
+#include "RFLogMacros.h"
 
 URFEquipmentComponent::URFEquipmentComponent()
 {
@@ -23,7 +24,13 @@ bool URFEquipmentComponent::OnEquip(TSubclassOf<URFWeaponInstance> EquipWeaponIn
 {
 	if (CurrentWeaponInstance)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Already has weapon."));
+		UE_LOG(LogRF, Warning, TEXT("Already has weapon."));
+		return false;
+	}
+
+	if (EquipWeaponInstance == nullptr)
+	{
+		UE_LOG(LogRF, Warning, TEXT("EquipWeapon Instance is invalid on [%s]"), *GetNameSafe(this));
 		return false;
 	}
 

@@ -4,6 +4,7 @@
 #include "RFWeaponInstance.h"
 #include "RFCharacter.h"
 #include "RFWeaponBase.h"
+#include "AbilitySystem/RFAbilitySet.h"
 
 void URFWeaponInstance::EquipWeapon()
 {

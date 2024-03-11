@@ -7,6 +7,7 @@
 #include "RFWeaponInstance.generated.h"
 
 class UCameraShakeBase;
+class URFAbilitySet;
 
 /**
  * 
@@ -45,8 +46,8 @@ private:
 
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponData", meta = (AllowPrivateAccess = "true"))
 	//TSubclassOf<AWeaponActorBase> EquipWeapon;
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponAbilityData", meta = (AllowPrivateAccess = "true"))
-	//TObjectPtr<UAbilitySet> WepaonAbilitySet;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponAbilityData", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<URFAbilitySet> WepaonAbilitySet;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData", meta = (AllowPrivateAccess = "true"))
 	FName AttachSocketName;

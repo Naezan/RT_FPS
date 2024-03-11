@@ -4,21 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "Logging/LogMacros.h"
 #include "RFCharacter.generated.h"
 
 class UInputComponent;
 class USkeletalMeshComponent;
 class UCameraComponent;
 class URFEquipmentComponent;
+class URFAbilitySystemComponent;
+class ARFPlayerState;
 class UProceduralAnimComponent;
 class URFWeaponInstance;
 
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
-
-DECLARE_LOG_CATEGORY_EXTERN(RFLogCharacter, Log, All);
 
 UCLASS()
 class RT_FPS_API ARFCharacter : public ACharacter
@@ -29,6 +28,7 @@ public:
 	ARFCharacter();
 
 protected:
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 
 	/** Called for movement input */
@@ -53,12 +53,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	bool GetHasWeapon();
 
+	const TSubclassOf<URFWeaponInstance> GetWeaoponInstance() const;
+	ARFPlayerState* GetRFPlayerState() const;
+
 	/** Returns Mesh1P subobject **/
 	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
 	/** Returns FirstPersonCameraComponent subobject **/
 	FORCEINLINE	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 	/* Returns Equipment subobject */
 	FORCEINLINE URFEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
+
+protected:
+	// Caching ASC
+	UPROPERTY()
+	TObjectPtr<URFAbilitySystemComponent> AbilitySystemComponent;
 
 private:
 	/** Bool for AnimBP to switch to another animation set */
@@ -91,9 +99,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<URFEquipmentComponent> EquipmentComponent;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<URFWeaponInstance> EquipWeaponInstance;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UProceduralAnimComponent> ProceduralAnimComponent;
