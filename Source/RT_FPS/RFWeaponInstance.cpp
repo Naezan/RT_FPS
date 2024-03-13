@@ -5,6 +5,13 @@
 #include "RFCharacter.h"
 #include "RFWeaponBase.h"
 #include "AbilitySystem/RFAbilitySet.h"
+#include "AbilitySystem/RFAbilitySystemComponent.h"
+
+URFWeaponInstance::URFWeaponInstance(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	bIsFirstShotAccuracy = true;
+}
 
 void URFWeaponInstance::EquipWeapon()
 {
@@ -34,11 +41,15 @@ void URFWeaponInstance::EquipWeapon()
 		TPAttachingWeapon->AttachToComponent(TPMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachSocketName);
 
 		TPEquippedWeapon = TPAttachingWeapon;
+
+		GiveWeaponAbility();
 	}
 }
 
 void URFWeaponInstance::UnEquipWeapon()
 {
+	RemoveWeaponAbility();
+
 	AActor* DetachedWeapon = GetWorld()->SpawnActorDeferred<AActor>(AttachToWeapon, TPEquippedWeapon->GetActorTransform(), nullptr);
 	// Activate Simulate Physics
 
@@ -46,6 +57,34 @@ void URFWeaponInstance::UnEquipWeapon()
 	FPEquippedWeapon = nullptr;
 	TPEquippedWeapon->Destroy();
 	TPEquippedWeapon = nullptr;
+}
+
+void URFWeaponInstance::GiveWeaponAbility()
+{
+	if (ARFCharacter* OwningPawn = Cast<ARFCharacter>(GetOuter()))
+	{
+		URFAbilitySystemComponent* ASC = OwningPawn->GetCachedAbilitySystemComponent();
+		WepaonAbilitySet->GiveAbilities(ASC, this);
+	}
+}
+
+void URFWeaponInstance::RemoveWeaponAbility()
+{
+	if (ARFCharacter* OwningPawn = Cast<ARFCharacter>(GetOuter()))
+	{
+		URFAbilitySystemComponent* ASC = OwningPawn->GetCachedAbilitySystemComponent();
+		WepaonAbilitySet->RemoveAbilities(ASC);
+	}
+}
+
+const FVector URFWeaponInstance::GetMuzzleLocation() const
+{
+	if (USkeletalMeshComponent* WeaponMesh = Cast<USkeletalMeshComponent>(FPEquippedWeapon->GetRootComponent()))
+	{
+		return WeaponMesh->GetSocketLocation(FName("Muzzle"));
+	}
+
+	return FVector();
 }
 
 void URFWeaponInstance::SetWeaponAnimInstance()

@@ -82,10 +82,7 @@ void ARFCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	if (ARFPlayerState* PS = GetRFPlayerState())
-	{
-		AbilitySystemComponent = PS->GetRFAbilitySystemComponent();
-	}
+	AbilitySystemComponent = GetCachedAbilitySystemComponent();
 }
 
 // Called when the game starts or when spawned
@@ -217,4 +214,14 @@ const TSubclassOf<URFWeaponInstance> ARFCharacter::GetWeaoponInstance() const
 ARFPlayerState* ARFCharacter::GetRFPlayerState() const
 {
 	return GetPlayerState<ARFPlayerState>();
+}
+
+URFAbilitySystemComponent* ARFCharacter::GetCachedAbilitySystemComponent() const
+{
+	if (ARFPlayerState* PS = GetRFPlayerState())
+	{
+		return PS->GetRFAbilitySystemComponent();
+	}
+
+	return nullptr;
 }

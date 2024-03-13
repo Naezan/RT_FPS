@@ -7,3 +7,8 @@ URFGameplayAbility::URFGameplayAbility(const FObjectInitializer& ObjectInitializ
 	: Super(ObjectInitializer)
 {
 }
+
+void URFGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+}

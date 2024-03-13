@@ -63,6 +63,8 @@ public:
 	/* Returns Equipment subobject */
 	FORCEINLINE URFEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
 
+	URFAbilitySystemComponent* GetCachedAbilitySystemComponent() const;
+
 protected:
 	// Caching ASC
 	UPROPERTY()

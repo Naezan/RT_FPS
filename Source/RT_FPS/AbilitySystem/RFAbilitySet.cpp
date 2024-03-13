@@ -9,16 +9,28 @@ URFAbilitySet::URFAbilitySet(const FObjectInitializer& ObjectInitializer)
 {
 }
 
-void URFAbilitySet::GiveAbilities(UAbilitySystemComponent* AbilitySystemComponent) const
+void URFAbilitySet::GiveAbilities(UAbilitySystemComponent* AbilitySystemComponent, UObject* SourceObject)
 {
 	for (const FGameplayAbilityInfo& AbilityInfo : Abilities)
 	{
 		FGameplayAbilitySpec AbilitySpec(AbilityInfo.GameplayAbilityClass, AbilityInfo.AbilityLevel);
+		//All Ability has source object that instance of weapon, if null -> not weapon ability
+		AbilitySpec.SourceObject = SourceObject;
 		AbilitySpec.DynamicAbilityTags.AddTag(AbilityInfo.InputTag);
 
 		if (AbilityInfo.GameplayAbilityClass)
 		{
-			AbilitySystemComponent->GiveAbility(AbilitySpec);
+			ActivatableAbilitySpecHandles.Add(AbilitySystemComponent->GiveAbility(AbilitySpec));
 		}
 	}
+}
+
+void URFAbilitySet::RemoveAbilities(UAbilitySystemComponent* AbilitySystemComponent)
+{
+	for (const FGameplayAbilitySpecHandle& AbilitySpecHandle : ActivatableAbilitySpecHandles)
+	{
+		AbilitySystemComponent->ClearAbility(AbilitySpecHandle);
+	}
+
+	ActivatableAbilitySpecHandles.Empty();
 }

@@ -9,6 +9,7 @@
 
 class UAbilitySystemComponent;
 class UGameplayAbility;
+struct FGameplayAbilitySpecHandle;
 
 USTRUCT()
 struct FGameplayAbilityInfo
@@ -35,9 +36,15 @@ class RT_FPS_API URFAbilitySet : public UPrimaryDataAsset
 
 public:
 	URFAbilitySet(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
-	
+
+	void GiveAbilities(UAbilitySystemComponent* AbilitySystemComponent, UObject* SourceObject);
+	void RemoveAbilities(UAbilitySystemComponent* AbilitySystemComponent);
+
+public:
 	UPROPERTY(EditDefaultsOnly, Category = AbilitySet)
 	TArray<FGameplayAbilityInfo> Abilities;
 
-	void GiveAbilities(UAbilitySystemComponent* AbilitySystemComponent) const;
+private:
+	UPROPERTY()
+	TArray<FGameplayAbilitySpecHandle> ActivatableAbilitySpecHandles;
 };
