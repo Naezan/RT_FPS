@@ -37,4 +37,5 @@ private:
 	void CalculateCameraTransform(OUT FVector& OutLocation, OUT FRotator& OutRotation);
 	const FVector GetCameraLocation();
 	const FRotator GetCameraRotation();
+	const FVector ApplyRecoilToBulletDirection(const FVector& InDirection, float SpreadHalfAngle, float Cohesiveness);
 };

@@ -32,11 +32,17 @@ public:
 	void RemoveWeaponAbility();
 
 public:
+	// Contains information on how much the player's aim will rotate at the Yaw angle(left/right).
 	FORCEINLINE float GetSpreadAngle() const { return FireSpreadAngle; }
+	FORCEINLINE float GetSpreadHalfAngle() const { return FireSpreadAngle / 2.f; }
 	FORCEINLINE float GetSpreadAngleMultiplier() const { return bIsFirstShotAccuracy ? 0.0f : FireSpreadAngleMultiplier; }
+	// How many bullet using when firing one shot.
 	FORCEINLINE int32 GetOneShotCartridge() const { return FireCartridge; }
+	// How bullet gathered together, 0.1 is spread worldwide(not recommended), 1.0 is default cluster, 1.0 > is more clustered on center of aim.
 	FORCEINLINE float GetFireCluster() const { return FireSpreadCluster; }
+	// Weapon Damage range when firing, same as trace thickness
 	FORCEINLINE float GetFireTraceRadius() const { return BulletRadius; }
+	// Max weapon firing range
 	FORCEINLINE float GetFireEffectiveRange() const { return WeaponEffectiveRange; }
 	FORCEINLINE bool IsFirstShotAccuracy() const { return bIsFirstShotAccuracy; }
 	

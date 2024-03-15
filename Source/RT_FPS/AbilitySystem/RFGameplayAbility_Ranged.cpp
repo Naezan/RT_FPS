@@ -34,13 +34,16 @@ URFWeaponInstance* URFGameplayAbility_Ranged::GetWeaponInstance() const
 void URFGameplayAbility_Ranged::PerformBulletTrace(OUT TArray<FHitResult>& OutHit)
 {
 	URFWeaponInstance* WeaponData = GetWeaponInstance();
+	float ActualSpreadHalfAngle = WeaponData->GetSpreadHalfAngle() * WeaponData->GetSpreadAngleMultiplier();
+	float FireClusterScale = WeaponData->GetFireCluster();
 
 	FVector TraceStart = WeaponData->GetMuzzleLocation();
 	FVector CameraDir = GetCameraRotation().RotateVector(FVector::ForwardVector);
-	FVector TraceEnd = TraceStart + CameraDir * WeaponData->GetFireEffectiveRange();
+	FVector ActualRecoilDorection = ApplyRecoilToBulletDirection(CameraDir, ActualSpreadHalfAngle, FireClusterScale);
+	FVector TraceEnd = TraceStart + ActualRecoilDorection * WeaponData->GetFireEffectiveRange();
 
-	int32 CartridgeCount = WeaponData->GetOneShotCartridge();
-	float SweepRadius = WeaponData->GetFireTraceRadius();
+	const int32 CartridgeCount = WeaponData->GetOneShotCartridge();
+	const float SweepRadius = WeaponData->GetFireTraceRadius();
 	BulletTraceByCartridge(OutHit, TraceStart, TraceEnd, CartridgeCount, SweepRadius);
 }
 
@@ -147,7 +150,8 @@ void URFGameplayAbility_Ranged::CalculateCameraTransform(OUT FVector& OutLocatio
 		}
 		else /* AI */
 		{
-			
+			OutLocation = AvatarPawn->GetActorLocation() + FVector(0, 0, AvatarPawn->BaseEyeHeight);
+			OutRotation = Controller->GetControlRotation();
 		}
 	}
 }
@@ -168,4 +172,22 @@ const FRotator URFGameplayAbility_Ranged::GetCameraRotation()
 	CalculateCameraTransform(CamLoc, CamRot);
 
 	return CamRot;
+}
+
+const FVector URFGameplayAbility_Ranged::ApplyRecoilToBulletDirection(const FVector& InDirection, float SpreadHalfAngle, float Cohesiveness)
+{
+	const float ActualCohesiveness = FMath::Pow(FMath::FRand(), Cohesiveness);
+	const float ActualYawRecoil = ActualCohesiveness * SpreadHalfAngle;
+
+	// The current angle is one way to the right,
+	// rotating this angle from 0 to 360 to represent it in various directions.
+	const float RollRecoil = FMath::FRandRange(0.f, 360.f);
+
+	FQuat DirectionQuat(InDirection.Rotation());
+	FQuat YawRecoilQuat(FRotator(0.f, ActualYawRecoil, 0.f));
+	FQuat RollRecoilQuat(FRotator(0.f, 0.f, RollRecoil));
+	FQuat ResultQuat = DirectionQuat * RollRecoilQuat * YawRecoilQuat;
+	ResultQuat.Normalize();
+
+	return ResultQuat.RotateVector(FVector::ForwardVector);
 }

@@ -30,7 +30,7 @@ bool URFEquipmentComponent::OnEquip(TSubclassOf<URFWeaponInstance> EquipWeaponIn
 
 	if (EquipWeaponInstance == nullptr)
 	{
-		UE_LOG(LogRF, Warning, TEXT("EquipWeapon Instance is invalid on [%s]"), *GetNameSafe(this));
+		UE_LOG(LogRF, Warning, TEXT("EquipWeapon Instance is invalid on [%s] : Client or Server [%s]"), *GetNameSafe(this), *GetClientServerContextString(GetOwner()));
 		return false;
 	}
 

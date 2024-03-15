@@ -13,7 +13,8 @@ void URFAbilitySet::GiveAbilities(UAbilitySystemComponent* AbilitySystemComponen
 {
 	for (const FGameplayAbilityInfo& AbilityInfo : Abilities)
 	{
-		FGameplayAbilitySpec AbilitySpec(AbilityInfo.GameplayAbilityClass, AbilityInfo.AbilityLevel);
+		
+		FGameplayAbilitySpec AbilitySpec(AbilityInfo.GameplayAbilityClass, AbilityInfo.AbilityLevel, InputID);
 		//All Ability has source object that instance of weapon, if null -> not weapon ability
 		AbilitySpec.SourceObject = SourceObject;
 		AbilitySpec.DynamicAbilityTags.AddTag(AbilityInfo.InputTag);

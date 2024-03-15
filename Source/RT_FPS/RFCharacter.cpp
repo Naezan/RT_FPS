@@ -6,6 +6,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "AbilitySystem/RFAbilitySystemComponent.h"
+#include "AbilitySystem/RFAbilityInputData.h"
+#include "Input/RFAbilityInputAction.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
@@ -81,21 +83,29 @@ ARFCharacter::ARFCharacter()
 void ARFCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-
-	AbilitySystemComponent = GetCachedAbilitySystemComponent();
 }
 
 // Called when the game starts or when spawned
 void ARFCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	// Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+
+			if (URFAbilityInputData* InputData = GetAbilityInputData())
+			{
+				const UInputMappingContext* AbilityInputMappingContext = InputData->GetAbilityInputMapping();
+				Subsystem->AddMappingContext(AbilityInputMappingContext, 1);
+			}
+			else
+			{
+				UE_LOG(LogRF, Error, TEXT("'%s' Failed to load AbilityInputMapping"), *RF_CUR_CLASS_LINE);
+			}
 		}
 	}
 
@@ -111,10 +121,60 @@ void ARFCharacter::BeginPlay()
 		Mesh1P->HideBoneByName(HideTPArmSocketName_Neck, EPhysBodyOp::PBO_None);
 	}
 
-	// Equip when firstplay
-	EquipWeapon();
+	GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+		{
+			// Equip when firstplay
+			EquipWeapon();
+		}));
 
 	ProceduralAnimComponent->InitProceduralProcess(ProceduralMeshComponent, Mesh1P);
+}
+
+void ARFCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	AbilitySystemComponent = GetCachedAbilitySystemComponent();
+
+	if (AbilitySystemComponent != nullptr)
+	{
+		if (ARFPlayerState* PS = GetRFPlayerState())
+		{
+			AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+		}
+		else
+		{
+			UE_LOG(LogRF, Error, TEXT("'%s' Failed to find PlayerState"), *RF_CUR_CLASS_LINE);
+		}
+	}
+	else
+	{
+		UE_LOG(LogRF, Error, TEXT("'%s' Failed to find AbilitySystemComponent"), *RF_CUR_CLASS_LINE);
+	}
+
+}
+
+void ARFCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	AbilitySystemComponent = GetCachedAbilitySystemComponent();
+
+	if (AbilitySystemComponent != nullptr)
+	{
+		if (ARFPlayerState* PS = GetRFPlayerState())
+		{
+			AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+		}
+		else
+		{
+			UE_LOG(LogRF, Error, TEXT("'%s' Failed to find PlayerState"), *RF_CUR_CLASS_LINE);
+		}
+	}
+	else
+	{
+		UE_LOG(LogRF, Error, TEXT("'%s' Failed to find AbilitySystemComponent"), *RF_CUR_CLASS_LINE);
+	}
 }
 
 void ARFCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -126,13 +186,59 @@ void ARFCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	{
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ARFCharacter::Move);
-
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ARFCharacter::Look);
+
+		const TMap<FGameplayTag, URFAbilityInputAction*> AllAbilityInputMap = GetAllAbilityInputMap();
+		for (const auto& InputInfo : AllAbilityInputMap)
+		{
+			EnhancedInputComponent->BindAction(InputInfo.Value, ETriggerEvent::Triggered, this, &ARFCharacter::OnAbilityInputPressed, InputInfo.Key);
+			EnhancedInputComponent->BindAction(InputInfo.Value, ETriggerEvent::Completed, this, &ARFCharacter::OnAbilityInputReleased, InputInfo.Key);
+		}
 	}
 	else
 	{
 		UE_LOG(LogRF, Error, TEXT("'%s' Failed to find an Enhanced Input Component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+	}
+}
+
+void ARFCharacter::OnAbilityInputPressed(FGameplayTag InputTag)
+{
+	const URFAbilityInputAction* InputAction = GetAbilityInputActionByTag(InputTag);
+
+	AbilitySystemComponent->AbilityLocalInputPressed(InputAction->GetInputID());
+}
+
+void ARFCharacter::OnAbilityInputReleased(FGameplayTag InputTag)
+{
+	const URFAbilityInputAction* InputAction = GetAbilityInputActionByTag(InputTag);
+
+	AbilitySystemComponent->AbilityLocalInputReleased(InputAction->GetInputID());
+}
+
+void ARFCharacter::Move(const FInputActionValue& Value)
+{
+	// input is a Vector2D
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	if (Controller != nullptr)
+	{
+		// add movement 
+		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
+		AddMovementInput(GetActorRightVector(), MovementVector.X);
+	}
+}
+
+void ARFCharacter::Look(const FInputActionValue& Value)
+{
+	// input is a Vector2D
+	FVector2D LookAxisVector = Value.Get<FVector2D>();
+
+	if (Controller != nullptr)
+	{
+		// add yaw and pitch input to controller
+		AddControllerYawInput(LookAxisVector.X);
+		AddControllerPitchInput(LookAxisVector.Y);
 	}
 }
 
@@ -162,32 +268,6 @@ void ARFCharacter::UnEquipWeapon()
 	}
 }
 
-void ARFCharacter::Move(const FInputActionValue& Value)
-{
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
-	{
-		// add movement 
-		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
-		AddMovementInput(GetActorRightVector(), MovementVector.X);
-	}
-}
-
-void ARFCharacter::Look(const FInputActionValue& Value)
-{
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
-	{
-		// add yaw and pitch input to controller
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
-	}
-}
-
 void ARFCharacter::SetHasWeapon(bool bNewHasWeapon)
 {
 	bHasWeapon = bNewHasWeapon;
@@ -200,7 +280,7 @@ bool ARFCharacter::GetHasWeapon()
 
 const TSubclassOf<URFWeaponInstance> ARFCharacter::GetWeaoponInstance() const
 {
-	if (ARFPlayerState* PS = GetPlayerState<ARFPlayerState>())
+	if (ARFPlayerState* PS = GetRFPlayerState())
 	{
 		if (const URFPlayerData* PlayerData = PS->GetPlayerData())
 		{
@@ -209,6 +289,64 @@ const TSubclassOf<URFWeaponInstance> ARFCharacter::GetWeaoponInstance() const
 	}
 
 	return nullptr;
+}
+
+URFAbilityInputData* ARFCharacter::GetAbilityInputData() const
+{
+	ARFPlayerState* PS = GetRFPlayerState();
+	if (PS == nullptr)
+	{
+		UE_LOG(LogRF, Error, TEXT("Fail to found PlayerState [%s]"), *RF_CUR_CLASS_FUNC);
+		return nullptr;
+	}
+
+	if (const URFPlayerData* PlayerData = PS->GetPlayerData())
+	{
+		if (PlayerData->AbilityInputData != nullptr)
+		{
+			return PlayerData->AbilityInputData;
+		}
+	}
+
+	return nullptr;
+}
+
+const URFAbilityInputAction* ARFCharacter::GetAbilityInputActionByTag(FGameplayTag InputTag) const
+{
+	URFAbilityInputData* InputData = GetAbilityInputData();
+
+	if (InputData != nullptr)
+	{
+		return InputData->FindAbilityInputActionByTag(InputTag);
+	}
+
+	return nullptr;
+}
+
+const TArray<URFAbilityInputAction*> ARFCharacter::GetAllAbilityInputAction() const
+{
+	URFAbilityInputData* InputData = GetAbilityInputData();
+
+	TArray<URFAbilityInputAction*> InputActions;
+	if (InputData != nullptr)
+	{
+		InputActions = InputData->GetAllInputActions();
+	}
+
+	return InputActions;
+}
+
+const TMap<FGameplayTag, URFAbilityInputAction*> ARFCharacter::GetAllAbilityInputMap() const
+{
+	URFAbilityInputData* InputData = GetAbilityInputData();
+
+	TArray<URFAbilityInputAction*> InputActions;
+	if (InputData != nullptr)
+	{
+		return InputData->GetAbilityInputInfo();
+	}
+
+	return TMap<FGameplayTag, URFAbilityInputAction*>();
 }
 
 ARFPlayerState* ARFCharacter::GetRFPlayerState() const

@@ -8,6 +8,7 @@
 
 class URFAbilitySet;
 class URFWeaponInstance;
+class URFAbilityInputData;
 
 /**
  * 
@@ -21,9 +22,11 @@ public:
 	URFPlayerData(const FObjectInitializer& ObjectInitializer);
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Ability)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability")
 	TObjectPtr<URFAbilitySet> AbilitySet;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ability|Input")
+	TObjectPtr<URFAbilityInputData> AbilityInputData;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Weapon)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon")
 	TSubclassOf<URFWeaponInstance> EquipWeaponInstance;
 };

@@ -6,6 +6,7 @@
 #include "RFWeaponBase.h"
 #include "AbilitySystem/RFAbilitySet.h"
 #include "AbilitySystem/RFAbilitySystemComponent.h"
+#include "RFLogMacros.h"
 
 URFWeaponInstance::URFWeaponInstance(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -64,6 +65,12 @@ void URFWeaponInstance::GiveWeaponAbility()
 	if (ARFCharacter* OwningPawn = Cast<ARFCharacter>(GetOuter()))
 	{
 		URFAbilitySystemComponent* ASC = OwningPawn->GetCachedAbilitySystemComponent();
+
+		if (OwningPawn->GetLocalRole() != ROLE_Authority || ASC == nullptr)
+		{
+			UE_LOG(LogRF, Warning, TEXT("Client Cant add ability -> [%d] or AbilitySystemComponent not valid -> [%d] : [%s]"), OwningPawn->GetLocalRole(), IsValid(ASC), *RF_CUR_CLASS_FUNC);
+			return;
+		}
 		WepaonAbilitySet->GiveAbilities(ASC, this);
 	}
 }
