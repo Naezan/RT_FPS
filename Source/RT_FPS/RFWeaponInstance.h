@@ -57,9 +57,9 @@ private:
 	UFUNCTION()
 	ACharacter* GetCharacter() const;
 	UFUNCTION()
-	USkeletalMeshComponent* GetCharacter3PMesh() const;
+	USkeletalMeshComponent* GetCharacterTPMesh() const;
 	UFUNCTION()
-	USkeletalMeshComponent* GetCharacter1PMesh() const;
+	USkeletalMeshComponent* GetCharacterFPMesh() const;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponData", meta = (AllowPrivateAccess = "true"))

@@ -20,7 +20,7 @@ void URFWeaponInstance::EquipWeapon()
 
 	if (AttachToWeapon)
 	{
-		USkeletalMeshComponent* FPMesh = GetCharacter1PMesh();
+		USkeletalMeshComponent* FPMesh = GetCharacterFPMesh();
 		AActor* FPAttachingWeapon = GetWorld()->SpawnActorDeferred<AActor>(AttachToWeapon, FTransform::Identity, GetPawn());
 		FPAttachingWeapon->FinishSpawning(FTransform::Identity, true);
 		FPAttachingWeapon->SetActorRelativeTransform(FPAttachTransform);
@@ -33,7 +33,7 @@ void URFWeaponInstance::EquipWeapon()
 
 		FPEquippedWeapon = FPAttachingWeapon;
 
-		USkeletalMeshComponent* TPMesh = GetCharacter3PMesh();
+		USkeletalMeshComponent* TPMesh = GetCharacterTPMesh();
 		AActor* TPAttachingWeapon = GetWorld()->SpawnActorDeferred<AActor>(AttachToWeapon, FTransform::Identity, GetPawn());
 
 		// if you don't TPAttachingWeapon is null
@@ -96,13 +96,13 @@ const FVector URFWeaponInstance::GetMuzzleLocation() const
 
 void URFWeaponInstance::SetWeaponAnimInstance()
 {
-	USkeletalMeshComponent* FPMesh = GetCharacter1PMesh();
+	USkeletalMeshComponent* FPMesh = GetCharacterFPMesh();
 	if (FPMesh && FPAnimInstance != nullptr)
 	{
 		FPMesh->LinkAnimClassLayers(FPAnimInstance);
 	}
 
-	USkeletalMeshComponent* TPMesh = GetCharacter3PMesh();
+	USkeletalMeshComponent* TPMesh = GetCharacterTPMesh();
 	if (TPMesh && TPAnimInstance != nullptr)
 	{
 		TPMesh->LinkAnimClassLayers(TPAnimInstance);
@@ -119,14 +119,14 @@ ACharacter* URFWeaponInstance::GetCharacter() const
 	return Cast<ACharacter>(GetOuter());
 }
 
-USkeletalMeshComponent* URFWeaponInstance::GetCharacter3PMesh() const
+USkeletalMeshComponent* URFWeaponInstance::GetCharacterTPMesh() const
 {
 	ACharacter* OwningCharacter = GetCharacter();
 	return OwningCharacter ? OwningCharacter->GetMesh() : nullptr;
 }
 
-USkeletalMeshComponent* URFWeaponInstance::GetCharacter1PMesh() const
+USkeletalMeshComponent* URFWeaponInstance::GetCharacterFPMesh() const
 {
 	ARFCharacter* OwningCharacter = Cast<ARFCharacter>(GetCharacter());
-	return OwningCharacter ? OwningCharacter->GetMesh1P() : nullptr;
+	return OwningCharacter ? OwningCharacter->GetFPMesh() : nullptr;
 }

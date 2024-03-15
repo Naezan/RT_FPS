@@ -4,7 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "GameplayTagContainer.h"
+#include "Interface/AbilityInputInterface.h"
+#include "Interface/RFMeshInterface.h"
 #include "RFCharacter.generated.h"
 
 class UInputComponent;
@@ -23,7 +24,7 @@ class URFAbilityInputData;
 struct FInputActionValue;
 
 UCLASS()
-class RT_FPS_API ARFCharacter : public ACharacter
+class RT_FPS_API ARFCharacter : public ACharacter, public IAbilityInputInterface, public IRFMeshInterface
 {
 	GENERATED_BODY()
 
@@ -63,13 +64,15 @@ public:
 
 	const TSubclassOf<URFWeaponInstance> GetWeaoponInstance() const;
 	URFAbilityInputData* GetAbilityInputData() const;
-	const URFAbilityInputAction* GetAbilityInputActionByTag(FGameplayTag InputTag) const;
+	virtual const UInputAction* GetAbilityInputActionByTag(FGameplayTag InputTag) const override;
+	virtual int32 GetAbilityInputActionIDByTag(FGameplayTag InputTag) const override;
 	const TArray<URFAbilityInputAction*> GetAllAbilityInputAction() const;
 	const TMap<FGameplayTag, URFAbilityInputAction*> GetAllAbilityInputMap() const;
 	ARFPlayerState* GetRFPlayerState() const;
 
 	/** Returns Mesh1P subobject **/
-	FORCEINLINE USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
+	virtual USkeletalMeshComponent* GetFPMesh() const override { return Mesh1P; }
+	virtual UAnimInstance* GetFPAnimInstance() const override;
 	/** Returns FirstPersonCameraComponent subobject **/
 	FORCEINLINE	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 	/* Returns Equipment subobject */

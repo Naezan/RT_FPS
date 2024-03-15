@@ -3,6 +3,7 @@
 
 #include "AbilitySystem/RFAbilitySet.h"
 #include "AbilitySystemComponent.h"
+#include "Interface/AbilityInputInterface.h"
 
 URFAbilitySet::URFAbilitySet(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -13,7 +14,14 @@ void URFAbilitySet::GiveAbilities(UAbilitySystemComponent* AbilitySystemComponen
 {
 	for (const FGameplayAbilityInfo& AbilityInfo : Abilities)
 	{
+		int32 InputID = INDEX_NONE;
 		
+		// Only player has InputID
+		if (IAbilityInputInterface* OwningCharacter = Cast<IAbilityInputInterface>(AbilitySystemComponent->GetAvatarActor()))
+		{
+			InputID = OwningCharacter->GetAbilityInputActionIDByTag(AbilityInfo.InputTag);
+		}
+
 		FGameplayAbilitySpec AbilitySpec(AbilityInfo.GameplayAbilityClass, AbilityInfo.AbilityLevel, InputID);
 		//All Ability has source object that instance of weapon, if null -> not weapon ability
 		AbilitySpec.SourceObject = SourceObject;

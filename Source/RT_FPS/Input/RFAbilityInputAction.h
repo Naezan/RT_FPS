@@ -17,26 +17,21 @@ class RT_FPS_API URFAbilityInputAction : public UInputAction
 protected:
     //FGuids are globally unique.
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GUID")
-    FGuid InputActionGuid;
+    mutable FGuid InputActionGuid;
 
 public:
     // Reference : https://voidbit.dev/automate-input-action-to-gameplay-ability-bindings/
     int32 GetInputID() const
     {
-        static bool bHasInputID = false;
-        if (!bHasInputID)
+        if (!InputActionGuid.IsValid())
         {
-            InputActionGuid.NewGuid();
-            bHasInputID = true;
+            FPlatformMisc::CreateGuid(InputActionGuid);
         }
         //FGuids are globally unique. They are made out of four int32 values
         //i.e. the quadruple of these int32 values is unique
         //and so adding them up together, 
         //returns a globally unique int32 value
 
-        return static_cast<int32>(InputActionGuid.A)
-            + static_cast<int32>(InputActionGuid.B)
-            + static_cast<int32>(InputActionGuid.C)
-            + static_cast<int32>(InputActionGuid.D);
+        return GetTypeHash(InputActionGuid);
     }
 };

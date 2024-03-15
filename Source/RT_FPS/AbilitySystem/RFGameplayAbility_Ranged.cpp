@@ -6,6 +6,31 @@
 #include "RFLogMacros.h"
 #include "Collision\RFCollisionChannel.h"
 
+// Reference by Lyra
+namespace RFConsoleVariables
+{
+	static float DrawBulletHitDuration = 0.0f;
+	static FAutoConsoleVariableRef CVarDrawBulletHitDuration(
+		TEXT("RF.Weapon.DrawBulletHitDuration"),
+		DrawBulletHitDuration,
+		TEXT("Should we do debug drawing for bullet impacts (if above zero, sets how long (in seconds))"),
+		ECVF_Default);
+
+	static float DrawBulletTraceDuration = 0.0f;
+	static FAutoConsoleVariableRef CVarDrawBulletTraceDuration(
+		TEXT("RF.Weapon.DrawBulletTraceDuration"),
+		DrawBulletTraceDuration,
+		TEXT("Should we do debug drawing for bullet traces (if above zero, sets how long (in seconds))"),
+		ECVF_Default);
+
+	static float DrawBulletHitRadius = 3.0f;
+	static FAutoConsoleVariableRef CVarDrawBulletHitRadius(
+		TEXT("RF.Weapon.DrawBulletHitRadius"),
+		DrawBulletHitRadius,
+		TEXT("When bullet hit debug drawing is enabled (see DrawBulletHitDuration), how big should the hit radius be? (in uu)"),
+		ECVF_Default);
+}
+
 void URFGameplayAbility_Ranged::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
@@ -23,6 +48,19 @@ void URFGameplayAbility_Ranged::ClientTargetTrace()
 	TArray<FHitResult> FoundTargetHit;
 	PerformBulletTrace(FoundTargetHit);
 
+	if (FoundTargetHit.Num() > 0)
+	{
+		for (const FHitResult& FoundHit : FoundTargetHit)
+		{
+#if ENABLE_DRAW_DEBUG
+			if (RFConsoleVariables::DrawBulletHitDuration > 0.0f)
+			{
+				DrawDebugPoint(GetWorld(), FoundHit.ImpactPoint, RFConsoleVariables::DrawBulletHitRadius, FColor::Red, false, RFConsoleVariables::DrawBulletHitRadius);
+			}
+#endif
+		}
+	}
+
 	//SendTargetDataToServer();
 }
 
@@ -34,6 +72,13 @@ URFWeaponInstance* URFGameplayAbility_Ranged::GetWeaponInstance() const
 void URFGameplayAbility_Ranged::PerformBulletTrace(OUT TArray<FHitResult>& OutHit)
 {
 	URFWeaponInstance* WeaponData = GetWeaponInstance();
+
+	if (WeaponData == nullptr)
+	{
+		UE_LOG(LogRF, Error, TEXT("WeaponData is not valid [%s]"), *RF_CUR_CLASS_LINE);
+		return;
+	}
+
 	float ActualSpreadHalfAngle = WeaponData->GetSpreadHalfAngle() * WeaponData->GetSpreadAngleMultiplier();
 	float FireClusterScale = WeaponData->GetFireCluster();
 
@@ -41,6 +86,14 @@ void URFGameplayAbility_Ranged::PerformBulletTrace(OUT TArray<FHitResult>& OutHi
 	FVector CameraDir = GetCameraRotation().RotateVector(FVector::ForwardVector);
 	FVector ActualRecoilDorection = ApplyRecoilToBulletDirection(CameraDir, ActualSpreadHalfAngle, FireClusterScale);
 	FVector TraceEnd = TraceStart + ActualRecoilDorection * WeaponData->GetFireEffectiveRange();
+
+#if ENABLE_DRAW_DEBUG
+	if (RFConsoleVariables::DrawBulletTraceDuration > 0.0f)
+	{
+		static float DebugThickness = 1.0f;
+		DrawDebugLine(GetWorld(), TraceStart, TraceStart + CameraDir * WeaponData->GetFireEffectiveRange(), FColor::Blue, false, RFConsoleVariables::DrawBulletTraceDuration, 0, DebugThickness);
+	}
+#endif // ENABLE_DRAW_DEBUG
 
 	const int32 CartridgeCount = WeaponData->GetOneShotCartridge();
 	const float SweepRadius = WeaponData->GetFireTraceRadius();
@@ -54,10 +107,27 @@ void URFGameplayAbility_Ranged::BulletTraceByCartridge(OUT TArray<FHitResult>& O
 		// Do first SingleLineTrace for simple to found target
 		FHitResult HitInfo = BulletTrace(OutHit, TraceStart, TraceEnd, 0.f);
 
+#if ENABLE_DRAW_DEBUG
+		if (RFConsoleVariables::DrawBulletTraceDuration > 0.0f)
+		{
+			static float DebugThickness = 1.0f;
+			DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, RFConsoleVariables::DrawBulletTraceDuration, 0, DebugThickness);
+		}
+#endif // ENABLE_DRAW_DEBUG
+
 		if (!HitInfo.bBlockingHit)
 		{
 			// Perform SweepLineTrace if none of the Hits have been detected
 			FHitResult SweepHitInfo = BulletTrace(OutHit, TraceStart, TraceEnd, SweepRadius);
+
+#if ENABLE_DRAW_DEBUG
+			if (RFConsoleVariables::DrawBulletTraceDuration > 0.0f)
+			{
+				// To Sweep
+				static float DebugThickness = 1.0f;
+				DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Green, false, RFConsoleVariables::DrawBulletTraceDuration, 0, DebugThickness);
+			}
+#endif // ENABLE_DRAW_DEBUG
 
 			//the target is a player -> add to OutHit
 			if (SweepHitInfo.bBlockingHit && IsHitPlayer(SweepHitInfo))

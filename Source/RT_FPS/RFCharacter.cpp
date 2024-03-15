@@ -204,14 +204,14 @@ void ARFCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 void ARFCharacter::OnAbilityInputPressed(FGameplayTag InputTag)
 {
-	const URFAbilityInputAction* InputAction = GetAbilityInputActionByTag(InputTag);
+	const URFAbilityInputAction* InputAction = Cast<URFAbilityInputAction>(GetAbilityInputActionByTag(InputTag));
 
 	AbilitySystemComponent->AbilityLocalInputPressed(InputAction->GetInputID());
 }
 
 void ARFCharacter::OnAbilityInputReleased(FGameplayTag InputTag)
 {
-	const URFAbilityInputAction* InputAction = GetAbilityInputActionByTag(InputTag);
+	const URFAbilityInputAction* InputAction = Cast<URFAbilityInputAction>(GetAbilityInputActionByTag(InputTag));
 
 	AbilitySystemComponent->AbilityLocalInputReleased(InputAction->GetInputID());
 }
@@ -311,7 +311,7 @@ URFAbilityInputData* ARFCharacter::GetAbilityInputData() const
 	return nullptr;
 }
 
-const URFAbilityInputAction* ARFCharacter::GetAbilityInputActionByTag(FGameplayTag InputTag) const
+const UInputAction* ARFCharacter::GetAbilityInputActionByTag(FGameplayTag InputTag) const
 {
 	URFAbilityInputData* InputData = GetAbilityInputData();
 
@@ -321,6 +321,16 @@ const URFAbilityInputAction* ARFCharacter::GetAbilityInputActionByTag(FGameplayT
 	}
 
 	return nullptr;
+}
+
+int32 ARFCharacter::GetAbilityInputActionIDByTag(FGameplayTag InputTag) const
+{
+	if (const URFAbilityInputAction* InputAction = Cast<URFAbilityInputAction>(GetAbilityInputActionByTag(InputTag)))
+	{
+		return InputAction->GetInputID();
+	}
+
+	return INDEX_NONE;
 }
 
 const TArray<URFAbilityInputAction*> ARFCharacter::GetAllAbilityInputAction() const
@@ -352,6 +362,12 @@ const TMap<FGameplayTag, URFAbilityInputAction*> ARFCharacter::GetAllAbilityInpu
 ARFPlayerState* ARFCharacter::GetRFPlayerState() const
 {
 	return GetPlayerState<ARFPlayerState>();
+}
+
+UAnimInstance* ARFCharacter::GetFPAnimInstance() const
+{
+	const USkeletalMeshComponent* FPMesh = GetFPMesh();
+	return FPMesh ? FPMesh->GetAnimInstance() : nullptr;
 }
 
 URFAbilitySystemComponent* ARFCharacter::GetCachedAbilitySystemComponent() const
