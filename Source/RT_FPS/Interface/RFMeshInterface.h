@@ -26,5 +26,6 @@ class RT_FPS_API IRFMeshInterface
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	virtual USkeletalMeshComponent* GetFPMesh() const { return nullptr; }
+	virtual USkeletalMeshComponent* GetFPLegMesh() const { return nullptr; }
 	virtual UAnimInstance* GetFPAnimInstance() const { return nullptr; }
 };

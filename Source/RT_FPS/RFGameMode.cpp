@@ -3,6 +3,7 @@
 
 #include "RFGameMode.h"
 #include "RFPlayerState.h"
+#include "RFGameState.h"
 #include "RFPlayerData.h"
 #include "RFLogMacros.h"
 
@@ -42,4 +43,15 @@ const URFPlayerData* ARFGameMode::GetRFPlayerData(AController* InController) con
 	}
 
 	return nullptr;
+}
+
+// Called on PreInitializeComponents
+void ARFGameMode::InitGameState()
+{
+	Super::InitGameState();
+}
+
+void ARFGameMode::GenericPlayerInitialization(AController* C)
+{
+	Super::GenericPlayerInitialization(C);
 }

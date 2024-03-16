@@ -44,6 +44,8 @@ public:
 	UFUNCTION(BlueprintPure)
 	USkeletalMeshComponent* GetCharacterFPMesh() const;
 	UFUNCTION(BlueprintPure)
+	USkeletalMeshComponent* GetCharacterFPLegMesh() const;
+	UFUNCTION(BlueprintPure)
 	AActor* GetFPWeaponActor() const { return FPEquippedWeapon; }
 	UFUNCTION(BlueprintPure)
 	AActor* GetTPWeaponActor() const { return TPEquippedWeapon; }

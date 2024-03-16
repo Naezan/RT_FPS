@@ -120,6 +120,12 @@ void URFWeaponInstance::SetWeaponAnimInstance()
 	{
 		TPMesh->LinkAnimClassLayers(TPAnimInstance);
 	}
+
+	USkeletalMeshComponent* LegMesh = GetCharacterFPLegMesh();
+	if (LegMesh && TPAnimInstance != nullptr)
+	{
+		LegMesh->LinkAnimClassLayers(TPAnimInstance);
+	}
 }
 
 void URFWeaponInstance::OnRep_FPEquippedWeapon()
@@ -152,4 +158,10 @@ USkeletalMeshComponent* URFWeaponInstance::GetCharacterFPMesh() const
 {
 	ARFCharacter* OwningCharacter = Cast<ARFCharacter>(GetCharacter());
 	return OwningCharacter ? OwningCharacter->GetFPMesh() : nullptr;
+}
+
+USkeletalMeshComponent* URFWeaponInstance::GetCharacterFPLegMesh() const
+{
+	ARFCharacter* OwningCharacter = Cast<ARFCharacter>(GetCharacter());
+	return OwningCharacter ? OwningCharacter->GetFPLegMesh() : nullptr;
 }

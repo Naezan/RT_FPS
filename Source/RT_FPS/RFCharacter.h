@@ -34,10 +34,15 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
-	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
+
 	// Client only
 	virtual void OnRep_PlayerState() override;
+
+	UFUNCTION()
+	void InputInitialized();
+	UFUNCTION()
+	void StartEquipWeapon();
 
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -51,34 +56,37 @@ protected:
 	void OnAbilityInputReleased(FGameplayTag InputTag);
 
 public:
+	//~Weapon
 	void EquipWeapon();
 	void UnEquipWeapon();
 
-public:
 	/** Setter to set the bool */
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	void SetHasWeapon(bool bNewHasWeapon);
-
 	/** Getter for the bool */
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	bool GetHasWeapon();
+	//~End of Weapon
 
-	const TSubclassOf<URFWeaponInstance> GetWeaoponInstance() const;
+	//~WeaponAbility
 	URFAbilityInputData* GetAbilityInputData() const;
 	virtual const UInputAction* GetAbilityInputActionByTag(FGameplayTag InputTag) const override;
 	virtual int32 GetAbilityInputActionIDByTag(FGameplayTag InputTag) const override;
 	const TArray<URFAbilityInputAction*> GetAllAbilityInputAction() const;
 	const TMap<FGameplayTag, URFAbilityInputAction*> GetAllAbilityInputMap() const;
-	ARFPlayerState* GetRFPlayerState() const;
+	//~End of WeaponAbility
 
+	URFAbilitySystemComponent* GetCachedAbilitySystemComponent() const;
+	ARFPlayerState* GetRFPlayerState() const;
+	const TSubclassOf<URFWeaponInstance> GetWeaoponInstance() const;
 	/** Returns Mesh1P subobject **/
 	virtual USkeletalMeshComponent* GetFPMesh() const override { return Mesh1P; }
+	virtual USkeletalMeshComponent* GetFPLegMesh() const override { return Mesh1P_Leg; }
 	virtual UAnimInstance* GetFPAnimInstance() const override;
 	/** Returns FirstPersonCameraComponent subobject **/
 	FORCEINLINE	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 	/* Returns Equipment subobject */
 	FORCEINLINE URFEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
-	URFAbilitySystemComponent* GetCachedAbilitySystemComponent() const;
 
 protected:
 	// Caching ASC

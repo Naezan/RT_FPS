@@ -39,6 +39,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	const URFPlayerData* GetRFPlayerData(AController* InController) const;
 
+protected:
+	virtual void InitGameState() override;
+	virtual void GenericPlayerInitialization(AController* C) override;
+
 public:
 	//void CharacterDied();
 	//void CharacterRespawn();

@@ -2,6 +2,11 @@
 
 
 #include "RFCharacter.h"
+#include "RFWeaponInstance.h"
+#include "RFPlayerState.h"
+#include "RFPlayerData.h"
+#include "RFLogMacros.h"
+#include "GameFramework/GameStateBase.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -13,10 +18,7 @@
 #include "InputActionValue.h"
 #include "RFEquipmentComponent.h"
 #include "ProceduralAnimComponent.h"
-#include "RFWeaponInstance.h"
-#include "RFPlayerState.h"
-#include "RFPlayerData.h"
-#include "RFLogMacros.h"
+#include "Interface/GameStateGlobalDelegateInterface.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Net/Core/PushModel/PushModel.h"
@@ -84,34 +86,10 @@ ARFCharacter::ARFCharacter()
 	ProceduralAnimComponent = CreateDefaultSubobject<UProceduralAnimComponent>(TEXT("ProceduralAnimComponent"));
 }
 
-void ARFCharacter::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-}
-
 // Called when the game starts or when spawned
 void ARFCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-
-			if (URFAbilityInputData* InputData = GetAbilityInputData())
-			{
-				const UInputMappingContext* AbilityInputMappingContext = InputData->GetAbilityInputMapping();
-				Subsystem->AddMappingContext(AbilityInputMappingContext, 1);
-			}
-			else
-			{
-				UE_LOG(LogRF, Error, TEXT("'%s' Failed to load AbilityInputMapping"), *RF_CUR_CLASS_LINE);
-			}
-		}
-	}
 
 	// Hide 3P mesh on player accept lowerbody
 	if (IsLocallyControlled())
@@ -124,12 +102,6 @@ void ARFCharacter::BeginPlay()
 		Mesh1P->HideBoneByName(HideFPThighSocketName_R, EPhysBodyOp::PBO_None);
 		Mesh1P->HideBoneByName(HideTPArmSocketName_Neck, EPhysBodyOp::PBO_None);
 	}
-
-	GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-		{
-			// Equip when firstplay
-			EquipWeapon();
-		}));
 
 	ProceduralAnimComponent->InitProceduralProcess(ProceduralMeshComponent, Mesh1P);
 }
@@ -145,6 +117,7 @@ void ARFCharacter::PossessedBy(AController* NewController)
 		if (ARFPlayerState* PS = GetRFPlayerState())
 		{
 			AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+			StartEquipWeapon();
 		}
 		else
 		{
@@ -169,6 +142,8 @@ void ARFCharacter::OnRep_PlayerState()
 		if (ARFPlayerState* PS = GetRFPlayerState())
 		{
 			AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+			InputInitialized();
+			StartEquipWeapon();
 		}
 		else
 		{
@@ -179,6 +154,31 @@ void ARFCharacter::OnRep_PlayerState()
 	{
 		UE_LOG(LogRF, Error, TEXT("'%s' Failed to find AbilitySystemComponent"), *RF_CUR_CLASS_LINE);
 	}
+}
+
+void ARFCharacter::InputInitialized()
+{
+	// Add Input Mapping Context
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			if (URFAbilityInputData* InputData = GetAbilityInputData())
+			{
+				const UInputMappingContext* AbilityInputMappingContext = InputData->GetAbilityInputMapping();
+				Subsystem->AddMappingContext(AbilityInputMappingContext, 1);
+			}
+			else
+			{
+				UE_LOG(LogRF, Error, TEXT("'%s' Failed to load AbilityInputMapping"), *RF_CUR_CLASS_LINE);
+			}
+		}
+	}
+}
+
+void ARFCharacter::StartEquipWeapon()
+{
+	EquipWeapon();
 }
 
 void ARFCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -282,19 +282,6 @@ bool ARFCharacter::GetHasWeapon()
 	return bHasWeapon;
 }
 
-const TSubclassOf<URFWeaponInstance> ARFCharacter::GetWeaoponInstance() const
-{
-	if (ARFPlayerState* PS = GetRFPlayerState())
-	{
-		if (const URFPlayerData* PlayerData = PS->GetPlayerData())
-		{
-			return PlayerData->EquipWeaponInstance;
-		}
-	}
-
-	return nullptr;
-}
-
 URFAbilityInputData* ARFCharacter::GetAbilityInputData() const
 {
 	ARFPlayerState* PS = GetRFPlayerState();
@@ -363,17 +350,6 @@ const TMap<FGameplayTag, URFAbilityInputAction*> ARFCharacter::GetAllAbilityInpu
 	return TMap<FGameplayTag, URFAbilityInputAction*>();
 }
 
-ARFPlayerState* ARFCharacter::GetRFPlayerState() const
-{
-	return GetPlayerState<ARFPlayerState>();
-}
-
-UAnimInstance* ARFCharacter::GetFPAnimInstance() const
-{
-	const USkeletalMeshComponent* FPMesh = GetFPMesh();
-	return FPMesh ? FPMesh->GetAnimInstance() : nullptr;
-}
-
 URFAbilitySystemComponent* ARFCharacter::GetCachedAbilitySystemComponent() const
 {
 	if (ARFPlayerState* PS = GetRFPlayerState())
@@ -382,6 +358,30 @@ URFAbilitySystemComponent* ARFCharacter::GetCachedAbilitySystemComponent() const
 	}
 
 	return nullptr;
+}
+
+ARFPlayerState* ARFCharacter::GetRFPlayerState() const
+{
+	return GetPlayerState<ARFPlayerState>();
+}
+
+const TSubclassOf<URFWeaponInstance> ARFCharacter::GetWeaoponInstance() const
+{
+	if (ARFPlayerState* PS = GetRFPlayerState())
+	{
+		if (const URFPlayerData* PlayerData = PS->GetPlayerData())
+		{
+			return PlayerData->EquipWeaponInstance;
+		}
+	}
+
+	return nullptr;
+}
+
+UAnimInstance* ARFCharacter::GetFPAnimInstance() const
+{
+	const USkeletalMeshComponent* FPMesh = GetFPMesh();
+	return FPMesh ? FPMesh->GetAnimInstance() : nullptr;
 }
 
 void ARFCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
