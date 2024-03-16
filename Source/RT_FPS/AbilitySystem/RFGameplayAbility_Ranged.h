@@ -26,8 +26,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void ClientTargetTrace();
 
-	URFWeaponInstance* GetWeaponInstance() const;
-
 private:
 	void PerformBulletTrace(OUT TArray<FHitResult>& OutHit);
 	void BulletTraceByCartridge(OUT TArray<FHitResult>& OutHit, const FVector& TraceStart, const FVector& TraceEnd, int32 InCartridgeCount, float SweepRadius);

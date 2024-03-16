@@ -14,6 +14,8 @@ class RT_FPS_API ARFWeaponBase : public AActor
 public:
 	// Sets default values for this actor's properties
 	ARFWeaponBase();
+	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	UFUNCTION(BlueprintCallable)
@@ -22,6 +24,6 @@ public:
 	bool GetFPAttribute() const { return IsFPWeapon; }
 
 private:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	uint8 IsFPWeapon : 1;
 };

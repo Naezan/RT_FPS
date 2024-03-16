@@ -31,6 +31,7 @@ class RT_FPS_API ARFCharacter : public ACharacter, public IAbilityInputInterface
 public:
 	ARFCharacter();
 	virtual void PossessedBy(AController* NewController) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -86,8 +87,8 @@ protected:
 
 private:
 	/** Bool for AnimBP to switch to another animation set */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
-	bool bHasWeapon;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
+	uint8 bHasWeapon : 1;
 
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))

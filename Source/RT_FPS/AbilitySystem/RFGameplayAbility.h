@@ -6,6 +6,8 @@
 #include "Abilities/GameplayAbility.h"
 #include "RFGameplayAbility.generated.h"
 
+class URFWeaponInstance;
+
 /**
  * 
  */
@@ -15,8 +17,17 @@ class RT_FPS_API URFGameplayAbility : public UGameplayAbility
 	GENERATED_BODY()
 
 public:
-
 	URFGameplayAbility(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+
+	// Client Only. If you want to replicated property, do not call weaponinstance
+	UFUNCTION(BlueprintPure)
+	URFWeaponInstance* GetWeaponInstance() const;
+
+	UFUNCTION(BlueprintPure)
+	AActor* GetFPReplicatedWeaponActor() const;
+
+	UFUNCTION(BlueprintPure)
+	AActor* GetTPReplicatedWeaponActor() const;
 
 protected:
 	//~UGameplayAbility interface

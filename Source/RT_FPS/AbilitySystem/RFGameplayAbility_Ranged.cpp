@@ -64,11 +64,6 @@ void URFGameplayAbility_Ranged::ClientTargetTrace()
 	//SendTargetDataToServer();
 }
 
-URFWeaponInstance* URFGameplayAbility_Ranged::GetWeaponInstance() const
-{
-	return Cast<URFWeaponInstance>(GetSourceObject(CurrentSpecHandle, CurrentActorInfo));
-}
-
 void URFGameplayAbility_Ranged::PerformBulletTrace(OUT TArray<FHitResult>& OutHit)
 {
 	URFWeaponInstance* WeaponData = GetWeaponInstance();

@@ -7,6 +7,7 @@
 #include "AbilitySystem/RFAbilitySet.h"
 #include "AbilitySystem/RFAbilitySystemComponent.h"
 #include "RFLogMacros.h"
+#include "Net/UnrealNetwork.h"
 
 URFWeaponInstance::URFWeaponInstance(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -14,11 +15,20 @@ URFWeaponInstance::URFWeaponInstance(const FObjectInitializer& ObjectInitializer
 	bIsFirstShotAccuracy = true;
 }
 
+void URFWeaponInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, FPEquippedWeapon);
+	DOREPLIFETIME(ThisClass, TPEquippedWeapon);
+}
+
 void URFWeaponInstance::EquipWeapon()
 {
+	//Server Only
 	SetWeaponAnimInstance();
 
-	if (AttachToWeapon)
+	if (AttachToWeapon && GetPawn() && GetPawn()->HasAuthority())
 	{
 		USkeletalMeshComponent* FPMesh = GetCharacterFPMesh();
 		AActor* FPAttachingWeapon = GetWorld()->SpawnActorDeferred<AActor>(AttachToWeapon, FTransform::Identity, GetPawn());
@@ -51,8 +61,11 @@ void URFWeaponInstance::UnEquipWeapon()
 {
 	RemoveWeaponAbility();
 
-	AActor* DetachedWeapon = GetWorld()->SpawnActorDeferred<AActor>(AttachToWeapon, TPEquippedWeapon->GetActorTransform(), nullptr);
-	// Activate Simulate Physics
+	if (AttachToWeapon && GetPawn() && GetPawn()->HasAuthority())
+	{
+		AActor* DetachedWeapon = GetWorld()->SpawnActorDeferred<AActor>(AttachToWeapon, TPEquippedWeapon->GetActorTransform(), nullptr);
+		// Activate Simulate Physics
+	}
 
 	FPEquippedWeapon->Destroy();
 	FPEquippedWeapon = nullptr;
@@ -107,6 +120,16 @@ void URFWeaponInstance::SetWeaponAnimInstance()
 	{
 		TPMesh->LinkAnimClassLayers(TPAnimInstance);
 	}
+}
+
+void URFWeaponInstance::OnRep_FPEquippedWeapon()
+{
+	UE_LOG(LogRF, Warning, TEXT("[%s]"), *RF_CUR_CLASS_FUNC);
+}
+
+void URFWeaponInstance::OnRep_TPEquippedWeapon()
+{
+	UE_LOG(LogRF, Warning, TEXT("[%s]"), *RF_CUR_CLASS_FUNC);
 }
 
 APawn* URFWeaponInstance::GetPawn() const

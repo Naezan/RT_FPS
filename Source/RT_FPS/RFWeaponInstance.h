@@ -20,6 +20,9 @@ class RT_FPS_API URFWeaponInstance : public UObject
 public:
 	URFWeaponInstance(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
+	virtual bool IsSupportedForNetworking() const override { return true; }
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 public:
 	UFUNCTION(BlueprintCallable)
 	void EquipWeapon();
@@ -32,6 +35,19 @@ public:
 	void RemoveWeaponAbility();
 
 public:
+	UFUNCTION(BlueprintPure)
+	APawn* GetPawn() const;
+	UFUNCTION(BlueprintPure)
+	ACharacter* GetCharacter() const;
+	UFUNCTION(BlueprintPure)
+	USkeletalMeshComponent* GetCharacterTPMesh() const;
+	UFUNCTION(BlueprintPure)
+	USkeletalMeshComponent* GetCharacterFPMesh() const;
+	UFUNCTION(BlueprintPure)
+	AActor* GetFPWeaponActor() const { return FPEquippedWeapon; }
+	UFUNCTION(BlueprintPure)
+	AActor* GetTPWeaponActor() const { return TPEquippedWeapon; }
+
 	// Contains information on how much the player's aim will rotate at the Yaw angle(left/right).
 	FORCEINLINE float GetSpreadAngle() const { return FireSpreadAngle; }
 	FORCEINLINE float GetSpreadHalfAngle() const { return FireSpreadAngle / 2.f; }
@@ -48,18 +64,8 @@ public:
 	
 	const FVector GetMuzzleLocation() const;
 
-protected:
+	UFUNCTION()
 	void SetWeaponAnimInstance();
-
-private:
-	UFUNCTION()
-	APawn* GetPawn() const;
-	UFUNCTION()
-	ACharacter* GetCharacter() const;
-	UFUNCTION()
-	USkeletalMeshComponent* GetCharacterTPMesh() const;
-	UFUNCTION()
-	USkeletalMeshComponent* GetCharacterFPMesh() const;
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponData", meta = (AllowPrivateAccess = "true"))
@@ -105,8 +111,14 @@ private:
 	TSubclassOf<UAnimInstance> TPAnimInstance;
 
 private:
-	UPROPERTY()
+	UFUNCTION()
+	void OnRep_FPEquippedWeapon();
+	UFUNCTION()
+	void OnRep_TPEquippedWeapon();
+
+private:
+	UPROPERTY(ReplicatedUsing = OnRep_FPEquippedWeapon, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<AActor> FPEquippedWeapon;
-	UPROPERTY()
+	UPROPERTY(ReplicatedUsing = OnRep_TPEquippedWeapon, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<AActor> TPEquippedWeapon;
 };

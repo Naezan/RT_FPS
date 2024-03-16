@@ -18,6 +18,9 @@
 #include "RFPlayerData.h"
 #include "RFLogMacros.h"
 
+#include "Net/UnrealNetwork.h"
+#include "Net/Core/PushModel/PushModel.h"
+
 // Sets default values
 ARFCharacter::ARFCharacter()
 {
@@ -77,6 +80,7 @@ ARFCharacter::ARFCharacter()
 	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -96.f));
 
 	EquipmentComponent = CreateDefaultSubobject<URFEquipmentComponent>(TEXT("EquipmentComponent"));
+	EquipmentComponent->SetIsReplicated(true);
 	ProceduralAnimComponent = CreateDefaultSubobject<UProceduralAnimComponent>(TEXT("ProceduralAnimComponent"));
 }
 
@@ -244,7 +248,7 @@ void ARFCharacter::Look(const FInputActionValue& Value)
 
 void ARFCharacter::EquipWeapon()
 {
-	if (bHasWeapon)
+	if (bHasWeapon && HasAuthority())
 	{
 		return;
 	}
@@ -257,7 +261,7 @@ void ARFCharacter::EquipWeapon()
 
 void ARFCharacter::UnEquipWeapon()
 {
-	if (!bHasWeapon)
+	if (!bHasWeapon && HasAuthority())
 	{
 		return;
 	}
@@ -378,4 +382,15 @@ URFAbilitySystemComponent* ARFCharacter::GetCachedAbilitySystemComponent() const
 	}
 
 	return nullptr;
+}
+
+void ARFCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	FDoRepLifetimeParams SharedParams;
+	SharedParams.bIsPushBased = true;
+	SharedParams.RepNotifyCondition = ELifetimeRepNotifyCondition::REPNOTIFY_OnChanged;
+
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bHasWeapon, SharedParams);
 }
