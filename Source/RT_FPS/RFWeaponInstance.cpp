@@ -2,10 +2,12 @@
 
 
 #include "RFWeaponInstance.h"
-#include "RFCharacter.h"
+#include "GameFramework/Character.h"
 #include "RFWeaponBase.h"
+#include "RFMagazineBase.h"
 #include "AbilitySystem/RFAbilitySet.h"
-#include "AbilitySystem/RFAbilitySystemComponent.h"
+#include "Interface/RFMeshInterface.h"
+#include "AbilitySystemInterface.h"
 #include "RFLogMacros.h"
 #include "Net/UnrealNetwork.h"
 
@@ -21,93 +23,11 @@ void URFWeaponInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 	DOREPLIFETIME(ThisClass, FPEquippedWeapon);
 	DOREPLIFETIME(ThisClass, TPEquippedWeapon);
+	DOREPLIFETIME(ThisClass, FPEquippedWeaponMag);
+	DOREPLIFETIME(ThisClass, TPEquippedWeaponMag);
 }
 
-void URFWeaponInstance::EquipWeapon()
-{
-	//Server Only
-	SetWeaponAnimInstance();
-
-	if (AttachToWeapon && GetPawn() && GetPawn()->HasAuthority())
-	{
-		USkeletalMeshComponent* FPMesh = GetCharacterFPMesh();
-		AActor* FPAttachingWeapon = GetWorld()->SpawnActorDeferred<AActor>(AttachToWeapon, FTransform::Identity, GetPawn());
-		FPAttachingWeapon->FinishSpawning(FTransform::Identity, true);
-		FPAttachingWeapon->SetActorRelativeTransform(FPAttachTransform);
-		FPAttachingWeapon->AttachToComponent(FPMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachSocketName);
-		
-		if (ARFWeaponBase* FPWeapon = Cast<ARFWeaponBase>(FPAttachingWeapon))
-		{
-			FPWeapon->SetFPAttribute(true);
-		}
-
-		FPEquippedWeapon = FPAttachingWeapon;
-
-		USkeletalMeshComponent* TPMesh = GetCharacterTPMesh();
-		AActor* TPAttachingWeapon = GetWorld()->SpawnActorDeferred<AActor>(AttachToWeapon, FTransform::Identity, GetPawn());
-
-		// if you don't TPAttachingWeapon is null
-		TPAttachingWeapon->FinishSpawning(FTransform::Identity, true);
-		TPAttachingWeapon->SetActorRelativeTransform(TPAttachTransform);
-		TPAttachingWeapon->AttachToComponent(TPMesh, FAttachmentTransformRules::SnapToTargetNotIncludingScale, AttachSocketName);
-
-		TPEquippedWeapon = TPAttachingWeapon;
-
-		GiveWeaponAbility();
-	}
-}
-
-void URFWeaponInstance::UnEquipWeapon()
-{
-	RemoveWeaponAbility();
-
-	if (AttachToWeapon && GetPawn() && GetPawn()->HasAuthority())
-	{
-		AActor* DetachedWeapon = GetWorld()->SpawnActorDeferred<AActor>(AttachToWeapon, TPEquippedWeapon->GetActorTransform(), nullptr);
-		// Activate Simulate Physics
-	}
-
-	FPEquippedWeapon->Destroy();
-	FPEquippedWeapon = nullptr;
-	TPEquippedWeapon->Destroy();
-	TPEquippedWeapon = nullptr;
-}
-
-void URFWeaponInstance::GiveWeaponAbility()
-{
-	if (ARFCharacter* OwningPawn = Cast<ARFCharacter>(GetOuter()))
-	{
-		URFAbilitySystemComponent* ASC = OwningPawn->GetCachedAbilitySystemComponent();
-
-		if (OwningPawn->GetLocalRole() != ROLE_Authority || ASC == nullptr)
-		{
-			UE_LOG(LogRF, Warning, TEXT("Client Cant add ability -> [%d] or AbilitySystemComponent not valid -> [%d] : [%s]"), OwningPawn->GetLocalRole(), IsValid(ASC), *RF_CUR_CLASS_FUNC);
-			return;
-		}
-		WepaonAbilitySet->GiveAbilities(ASC, this);
-	}
-}
-
-void URFWeaponInstance::RemoveWeaponAbility()
-{
-	if (ARFCharacter* OwningPawn = Cast<ARFCharacter>(GetOuter()))
-	{
-		URFAbilitySystemComponent* ASC = OwningPawn->GetCachedAbilitySystemComponent();
-		WepaonAbilitySet->RemoveAbilities(ASC);
-	}
-}
-
-const FVector URFWeaponInstance::GetMuzzleLocation() const
-{
-	if (USkeletalMeshComponent* WeaponMesh = Cast<USkeletalMeshComponent>(FPEquippedWeapon->GetRootComponent()))
-	{
-		return WeaponMesh->GetSocketLocation(FName("Muzzle"));
-	}
-
-	return FVector();
-}
-
-void URFWeaponInstance::SetWeaponAnimInstance()
+void URFWeaponInstance::InitializeWeaponAnimInstance()
 {
 	USkeletalMeshComponent* FPMesh = GetCharacterFPMesh();
 	if (FPMesh && FPAnimInstance != nullptr)
@@ -128,12 +48,158 @@ void URFWeaponInstance::SetWeaponAnimInstance()
 	}
 }
 
+void URFWeaponInstance::EquipWeapon()
+{
+	//Server Only
+	InitializeWeaponAnimInstance();
+
+	if (GetPawn() && GetPawn()->HasAuthority())
+	{
+		SpawnWeapon();
+		SpawnWeaponMagazine();
+
+		GiveWeaponAbility();
+	}
+}
+
+void URFWeaponInstance::UnEquipWeapon()
+{
+	RemoveWeaponAbility();
+
+	if (WeaponClass && GetPawn() && GetPawn()->HasAuthority())
+	{
+		AActor* DetachedWeapon = GetWorld()->SpawnActorDeferred<AActor>(WeaponClass, TPEquippedWeapon->GetActorTransform(), nullptr);
+		// Activate Simulate Physics
+	}
+
+	FPEquippedWeapon->Destroy();
+	TPEquippedWeapon->Destroy();
+	FPEquippedWeapon = nullptr;
+	TPEquippedWeapon = nullptr;
+	FPEquippedWeaponMag = nullptr;
+	TPEquippedWeaponMag = nullptr;
+}
+
+void URFWeaponInstance::SpawnWeapon()
+{
+	FPEquippedWeapon = SpawnActorByMesh(
+	WeaponClass, 
+	GetPawn(), 
+	GetCharacterFPMesh(), 
+	FAttachmentTransformRules::SnapToTargetNotIncludingScale, 
+	WeaponAttachSocketName);
+	if (ARFWeaponBase* FPWeapon = Cast<ARFWeaponBase>(FPEquippedWeapon))
+	{
+		FPWeapon->SetFPAttribute(true);
+	}
+
+	TPEquippedWeapon = SpawnActorByMesh(
+	WeaponClass, 
+	GetPawn(), 
+	GetCharacterTPMesh(), 
+	FAttachmentTransformRules::SnapToTargetNotIncludingScale, 
+	WeaponAttachSocketName);
+}
+
+void URFWeaponInstance::SpawnWeaponMagazine()
+{
+	FPEquippedWeaponMag = SpawnActorByMesh(
+	WeaponMagazineClass, 
+	FPEquippedWeapon, 
+	GetWeaponMesh(FPEquippedWeapon), 
+	FAttachmentTransformRules::KeepRelativeTransform, 
+	MagAttachSocketName);
+	if (ARFWeaponBase* FPWeapon = Cast<ARFWeaponBase>(FPEquippedWeapon))
+	{
+		FPWeapon->SetAttachedMagActor(FPEquippedWeaponMag);
+	}
+
+	TPEquippedWeaponMag = SpawnActorByMesh(
+	WeaponMagazineClass, 
+	TPEquippedWeapon, 
+	GetWeaponMesh(TPEquippedWeapon), 
+	FAttachmentTransformRules::KeepRelativeTransform, 
+	MagAttachSocketName);
+	if (ARFWeaponBase* TPWeapon = Cast<ARFWeaponBase>(TPEquippedWeapon))
+	{
+		TPWeapon->SetAttachedMagActor(TPEquippedWeaponMag);
+	}
+}
+
+AActor* URFWeaponInstance::SpawnActorByMesh(TSubclassOf<AActor> ActorClass, AActor* Owner, USkeletalMeshComponent* AttachMesh, const FAttachmentTransformRules& AttachmentRules, FName AttachSocket)
+{
+	AActor* AttachToActor = (ActorClass != nullptr) ? GetWorld()->SpawnActorDeferred<AActor>(ActorClass, FTransform::Identity, Owner) : nullptr;
+
+	// if you don't AttachToActor is null
+	AttachToActor->FinishSpawning(FTransform::Identity, true);
+	AttachToActor->SetActorRelativeTransform(FTransform::Identity);
+
+	if (AttachMesh)
+	{
+		AttachToActor->AttachToComponent(AttachMesh, AttachmentRules, AttachSocket);
+	}
+
+	return AttachToActor;
+}
+
+void URFWeaponInstance::GiveWeaponAbility()
+{
+	if (ACharacter* OwningPawn = Cast<ACharacter>(GetOuter()))
+	{
+		if (IAbilitySystemInterface* ASCInterface = Cast<IAbilitySystemInterface>(OwningPawn))
+		{
+			UAbilitySystemComponent* ASC = ASCInterface->GetAbilitySystemComponent();
+			if (OwningPawn->GetLocalRole() != ROLE_Authority || ASC == nullptr)
+			{
+				UE_LOG(LogRF, Warning, TEXT("Client Cant add ability(OwningPawn Role:[%d]) or AbilitySystemComponent Validation(IsValid:[%d]), in funciton([%s])"), OwningPawn->GetLocalRole(), ASC != nullptr, *RF_CUR_CLASS_FUNC);
+				return;
+			}
+			WepaonAbilitySet->GiveAbilities(ASC, this);
+		}
+	}
+}
+
+void URFWeaponInstance::RemoveWeaponAbility()
+{
+	if (ACharacter* OwningPawn = Cast<ACharacter>(GetOuter()))
+	{
+		if (IAbilitySystemInterface* ASCInterface = Cast<IAbilitySystemInterface>(OwningPawn))
+		{
+			UAbilitySystemComponent* ASC = ASCInterface->GetAbilitySystemComponent();
+			if (ASC != nullptr)
+			{
+				WepaonAbilitySet->RemoveAbilities(ASC);
+			}
+		}
+	}
+}
+
+const FVector URFWeaponInstance::GetMuzzleLocation() const
+{
+	if (USkeletalMeshComponent* WeaponMesh = Cast<USkeletalMeshComponent>(FPEquippedWeapon->GetRootComponent()))
+	{
+		return WeaponMesh->GetSocketLocation(FName("Muzzle"));
+	}
+
+	return FVector();
+}
+
 void URFWeaponInstance::OnRep_FPEquippedWeapon()
 {
 	UE_LOG(LogRF, Warning, TEXT("[%s]"), *RF_CUR_CLASS_FUNC);
 }
 
 void URFWeaponInstance::OnRep_TPEquippedWeapon()
+{
+	UE_LOG(LogRF, Warning, TEXT("[%s]"), *RF_CUR_CLASS_FUNC);
+}
+
+void URFWeaponInstance::OnRep_FPEquippedWeaponMag()
+{
+	UE_LOG(LogRF, Warning, TEXT("[%s]"), *RF_CUR_CLASS_FUNC);
+}
+
+void URFWeaponInstance::OnRep_TPEquippedWeaponMag()
 {
 	UE_LOG(LogRF, Warning, TEXT("[%s]"), *RF_CUR_CLASS_FUNC);
 }
@@ -156,12 +222,17 @@ USkeletalMeshComponent* URFWeaponInstance::GetCharacterTPMesh() const
 
 USkeletalMeshComponent* URFWeaponInstance::GetCharacterFPMesh() const
 {
-	ARFCharacter* OwningCharacter = Cast<ARFCharacter>(GetCharacter());
+	IRFMeshInterface* OwningCharacter = Cast<IRFMeshInterface>(GetCharacter());
 	return OwningCharacter ? OwningCharacter->GetFPMesh() : nullptr;
 }
 
 USkeletalMeshComponent* URFWeaponInstance::GetCharacterFPLegMesh() const
 {
-	ARFCharacter* OwningCharacter = Cast<ARFCharacter>(GetCharacter());
+	IRFMeshInterface* OwningCharacter = Cast<IRFMeshInterface>(GetCharacter());
 	return OwningCharacter ? OwningCharacter->GetFPLegMesh() : nullptr;
+}
+
+USkeletalMeshComponent* URFWeaponInstance::GetWeaponMesh(AActor* WeaponMesh) const
+{
+	return WeaponMesh ? Cast<USkeletalMeshComponent>(WeaponMesh->GetRootComponent()) : nullptr;
 }

@@ -255,7 +255,7 @@ void ARFCharacter::EquipWeapon()
 
 	if (EquipmentComponent->OnEquip(GetWeaoponInstance()))
 	{
-		bHasWeapon = true;
+		SetHasWeapon(true);
 	}
 }
 
@@ -268,13 +268,14 @@ void ARFCharacter::UnEquipWeapon()
 
 	if (EquipmentComponent->OnUnEquip())
 	{
-		bHasWeapon = false;
+		SetHasWeapon(false);
 	}
 }
 
 void ARFCharacter::SetHasWeapon(bool bNewHasWeapon)
 {
 	bHasWeapon = bNewHasWeapon;
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, bHasWeapon, this);
 }
 
 bool ARFCharacter::GetHasWeapon()
@@ -348,6 +349,11 @@ const TMap<FGameplayTag, URFAbilityInputAction*> ARFCharacter::GetAllAbilityInpu
 	}
 
 	return TMap<FGameplayTag, URFAbilityInputAction*>();
+}
+
+UAbilitySystemComponent* ARFCharacter::GetAbilitySystemComponent() const
+{
+	return GetCachedAbilitySystemComponent();
 }
 
 URFAbilitySystemComponent* ARFCharacter::GetCachedAbilitySystemComponent() const

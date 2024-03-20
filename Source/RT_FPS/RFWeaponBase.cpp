@@ -19,6 +19,13 @@ void ARFWeaponBase::BeginPlay()
 void ARFWeaponBase::SetFPAttribute(bool IsFP)
 {
 	IsFPWeapon = IsFP;
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, IsFPWeapon, this);
+}
+
+void ARFWeaponBase::SetAttachedMagActor(AActor* InMagActor)
+{
+	AttachedMagActor = InMagActor;
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, IsFPWeapon, this);
 }
 
 void ARFWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -30,4 +37,5 @@ void ARFWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	SharedParams.RepNotifyCondition = ELifetimeRepNotifyCondition::REPNOTIFY_OnChanged;
 
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, IsFPWeapon, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, AttachedMagActor, SharedParams);
 }

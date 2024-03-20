@@ -34,9 +34,11 @@ bool URFEquipmentComponent::OnEquip(TSubclassOf<URFWeaponInstance> EquipWeaponIn
 		}
 
 		CurrentWeaponInstance = NewObject<URFWeaponInstance>(GetOwner(), EquipWeaponInstance);
+		MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, CurrentWeaponInstance, this);
 	}
 
 	CurrentWeaponInstance->EquipWeapon();
+	InitializeMagazineData();
 
 	return true;
 }
@@ -55,6 +57,67 @@ bool URFEquipmentComponent::OnUnEquip()
 	return true;
 }
 
+void URFEquipmentComponent::InitializeMagazineData(int32 DefaultMagazineIndex)
+{
+	if (CurrentWeaponInstance)
+	{
+		int32 MagazineCapacity = CurrentWeaponInstance->GetMagazineCapacity();
+		if (MagazineCapacity > 0)
+		{
+			CurrentMagazineInfo.CurrentMagazineIndex = DefaultMagazineIndex;
+			CurrentMagazineInfo.EquipMagazineAmmo.Init(0, MagazineCapacity);
+			for (int32 i = 0; i < MagazineCapacity; ++i)
+			{
+				CurrentMagazineInfo.EquipMagazineAmmo[i] = CurrentWeaponInstance->GetMagazineInfos()[i].AmmoCount;
+			}
+			MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, CurrentMagazineInfo, this);
+
+			MagazineAmmoData.Add(CurrentWeaponInstance->GetMagazineTag(), CurrentMagazineInfo);
+		}
+	}
+}
+
+int32 URFEquipmentComponent::GetMagazineAmmoCountByTag(FGameplayTag MagazineTag)
+{
+	FEquipMagazineInfo Info = MagazineAmmoData.FindRef(MagazineTag);
+	return Info.GetCurrentMagazineAmmo();
+}
+
+int32 URFEquipmentComponent::GetCurrentMagazineCapacity() const
+{
+	return CurrentMagazineInfo.GetCurrentMagazineCapacity();
+}
+
+void URFEquipmentComponent::RemoveMagazineAmmoCountByTag(FGameplayTag MagazineTag, int32 StackCount)
+{
+	if (MagazineAmmoData.Contains(MagazineTag))
+	{
+		CurrentMagazineInfo.RemoveCurrentMagazineAmmo(StackCount);
+		MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, CurrentMagazineInfo, this);
+
+		MagazineAmmoData[MagazineTag].RemoveCurrentMagazineAmmo(StackCount);
+	}
+}
+
+void URFEquipmentComponent::ReloadNextMagazine()
+{
+	if (CurrentMagazineInfo.GetCurrentMagazineAmmo() > 0)
+	{
+		CurrentMagazineInfo.MoveNextMagazineIndex();
+	}
+	else
+	{
+		CurrentMagazineInfo.RemoveCurrentMagazine();
+	}
+
+	FGameplayTag MagazineTag = CurrentWeaponInstance->GetMagazineTag();
+	if (MagazineTag.IsValid())
+	{
+		MagazineAmmoData[MagazineTag] = CurrentMagazineInfo;
+	}
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, CurrentMagazineInfo, this);
+}
+
 AActor* URFEquipmentComponent::GetReplicatedFPWeapon() const
 {
 	return CurrentWeaponInstance ? CurrentWeaponInstance->GetFPWeaponActor() : nullptr;
@@ -68,6 +131,18 @@ AActor* URFEquipmentComponent::GetReplicatedTPWeapon() const
 void URFEquipmentComponent::OnRep_CurrentWeaponInstance()
 {
 	UE_LOG(LogRF, Warning, TEXT("[%s]"), *RF_CUR_CLASS_FUNC);
+}
+
+void URFEquipmentComponent::OnRep_CurrentMagazineInfo()
+{
+	UE_LOG(LogRF, Warning, TEXT("[%s]"), *RF_CUR_CLASS_FUNC);
+
+	FGameplayTag MagazineTag = CurrentWeaponInstance ? CurrentWeaponInstance->GetMagazineTag() : FGameplayTag();
+	if (MagazineAmmoData.Contains(MagazineTag))
+	{
+		MagazineAmmoData[MagazineTag].CurrentMagazineIndex = CurrentMagazineInfo.CurrentMagazineIndex;
+		MagazineAmmoData[MagazineTag].EquipMagazineAmmo = CurrentMagazineInfo.EquipMagazineAmmo;
+	}
 }
 
 bool URFEquipmentComponent::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
@@ -91,4 +166,5 @@ void URFEquipmentComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	SharedParams.RepNotifyCondition = ELifetimeRepNotifyCondition::REPNOTIFY_OnChanged;
 
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, CurrentWeaponInstance, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, CurrentMagazineInfo, SharedParams);
 }

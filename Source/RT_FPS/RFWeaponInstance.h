@@ -4,10 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "GameplayTagContainer.h"
+#include "RFGlobalStruct.h"
 #include "RFWeaponInstance.generated.h"
 
 class UCameraShakeBase;
 class URFAbilitySet;
+class ARFWeaponBase;
+class ARFMagazineBase;
+struct FGameplayTag;
 
 /**
  * 
@@ -24,10 +29,20 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
+	UFUNCTION()
+	void InitializeWeaponAnimInstance();
 	UFUNCTION(BlueprintCallable)
 	void EquipWeapon();
 	UFUNCTION(BlueprintCallable)
 	void UnEquipWeapon();
+
+	UFUNCTION()
+	void SpawnWeapon();
+	UFUNCTION()
+	void SpawnWeaponMagazine();
+
+	// FAttachmentTransformRules is not support UFUNCTION Macro
+	AActor* SpawnActorByMesh(TSubclassOf<AActor> ActorClass, AActor* Owner, USkeletalMeshComponent* AttachMesh, const FAttachmentTransformRules& AttachmentRules, FName AttachSocket = NAME_None);
 
 	UFUNCTION(BlueprintCallable)
 	void GiveWeaponAbility();
@@ -46,6 +61,8 @@ public:
 	UFUNCTION(BlueprintPure)
 	USkeletalMeshComponent* GetCharacterFPLegMesh() const;
 	UFUNCTION(BlueprintPure)
+	USkeletalMeshComponent* GetWeaponMesh(AActor* WeaponMesh) const;
+	UFUNCTION(BlueprintPure)
 	AActor* GetFPWeaponActor() const { return FPEquippedWeapon; }
 	UFUNCTION(BlueprintPure)
 	AActor* GetTPWeaponActor() const { return TPEquippedWeapon; }
@@ -63,11 +80,13 @@ public:
 	// Max weapon firing range
 	FORCEINLINE float GetFireEffectiveRange() const { return WeaponEffectiveRange; }
 	FORCEINLINE bool IsFirstShotAccuracy() const { return bIsFirstShotAccuracy; }
-	
 	const FVector GetMuzzleLocation() const;
 
-	UFUNCTION()
-	void SetWeaponAnimInstance();
+	//~Magazine
+	const TArray<FMagazineInfo>& GetMagazineInfos() const { return MagazineInfos; }
+	int32 GetMagazineCapacity() const { return MagazineInfos.Num(); }
+	FGameplayTag GetMagazineTag() const { return MagazineTag; }
+	// ~Magazine
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponData", meta = (AllowPrivateAccess = "true"))
@@ -97,15 +116,19 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponAbilityData", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<URFAbilitySet> WepaonAbilitySet;
-
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData", meta = (AllowPrivateAccess = "true"))
-	FName AttachSocketName;
+	TSubclassOf<ARFWeaponBase> WeaponClass;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData", meta = (AllowPrivateAccess = "true"))
-	FTransform FPAttachTransform;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData", meta = (AllowPrivateAccess = "true"))
-	FTransform TPAttachTransform;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<AActor> AttachToWeapon;
+	FName WeaponAttachSocketName;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData|Mag", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<ARFMagazineBase> WeaponMagazineClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData|Mag", meta = (AllowPrivateAccess = "true"))
+	FName MagAttachSocketName;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData|Mag", meta = (AllowPrivateAccess = "true"))
+	TArray<FMagazineInfo> MagazineInfos;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData|Mag", meta = (AllowPrivateAccess = "true"))
+	FGameplayTag MagazineTag;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimData", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UAnimInstance> FPAnimInstance;
@@ -117,10 +140,18 @@ private:
 	void OnRep_FPEquippedWeapon();
 	UFUNCTION()
 	void OnRep_TPEquippedWeapon();
+	UFUNCTION()
+	void OnRep_FPEquippedWeaponMag();
+	UFUNCTION()
+	void OnRep_TPEquippedWeaponMag();
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_FPEquippedWeapon, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<AActor> FPEquippedWeapon;
 	UPROPERTY(ReplicatedUsing = OnRep_TPEquippedWeapon, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<AActor> TPEquippedWeapon;
+	UPROPERTY(ReplicatedUsing = OnRep_FPEquippedWeaponMag, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<AActor> FPEquippedWeaponMag;
+	UPROPERTY(ReplicatedUsing = OnRep_TPEquippedWeaponMag, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<AActor> TPEquippedWeaponMag;
 };

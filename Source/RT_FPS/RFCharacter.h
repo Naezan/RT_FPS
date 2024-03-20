@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Interface/AbilityInputInterface.h"
 #include "Interface/RFMeshInterface.h"
+#include "AbilitySystemInterface.h"
 #include "RFCharacter.generated.h"
 
 class UInputComponent;
@@ -24,7 +25,7 @@ class URFAbilityInputData;
 struct FInputActionValue;
 
 UCLASS()
-class RT_FPS_API ARFCharacter : public ACharacter, public IAbilityInputInterface, public IRFMeshInterface
+class RT_FPS_API ARFCharacter : public ACharacter, public IAbilitySystemInterface, public IAbilityInputInterface, public IRFMeshInterface
 {
 	GENERATED_BODY()
 
@@ -76,6 +77,7 @@ public:
 	const TMap<FGameplayTag, URFAbilityInputAction*> GetAllAbilityInputMap() const;
 	//~End of WeaponAbility
 
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	URFAbilitySystemComponent* GetCachedAbilitySystemComponent() const;
 	ARFPlayerState* GetRFPlayerState() const;
 	const TSubclassOf<URFWeaponInstance> GetWeaoponInstance() const;

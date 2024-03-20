@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "RFGlobalStruct.h"
 #include "RFEquipmentComponent.generated.h"
 
 class URFWeaponInstance;
@@ -31,6 +32,17 @@ public:
 	bool OnEquip(TSubclassOf<URFWeaponInstance> EquipWeaponInstance);
 	bool OnUnEquip();
 
+	void InitializeMagazineData(int32 DefaultMagazineIndex = 0);
+	UFUNCTION(BlueprintPure)
+	int32 GetMagazineAmmoCountByTag(FGameplayTag MagazineTag);
+	UFUNCTION(BlueprintPure)
+	int32 GetCurrentMagazineCapacity() const;
+	UFUNCTION(BlueprintCallable)
+	void RemoveMagazineAmmoCountByTag(FGameplayTag MagazineTag, int32 StackCount);
+
+	UFUNCTION(BlueprintCallable)
+	void ReloadNextMagazine();
+
 	UFUNCTION(BlueprintPure)
 	AActor* GetReplicatedFPWeapon() const;
 	UFUNCTION(BlueprintPure)
@@ -39,8 +51,16 @@ public:
 public:
 	UFUNCTION()
 	void OnRep_CurrentWeaponInstance();
+	UFUNCTION()
+	void OnRep_CurrentMagazineInfo();
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_CurrentWeaponInstance, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<URFWeaponInstance> CurrentWeaponInstance;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TMap<FGameplayTag, FEquipMagazineInfo> MagazineAmmoData;
+
+	UPROPERTY(ReplicatedUsing = OnRep_CurrentMagazineInfo, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	FEquipMagazineInfo CurrentMagazineInfo;
 };

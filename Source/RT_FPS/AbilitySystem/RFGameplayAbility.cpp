@@ -38,4 +38,13 @@ AActor* URFGameplayAbility::GetTPReplicatedWeaponActor() const
 void URFGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	if (CommitAbility(Handle, ActorInfo, ActivationInfo))
+	{
+		// TODO Process TargetData
+	}
+	else
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, /* bReplicateEndAbility */ true, /* bWasCancelled */ false);
+	}
 }

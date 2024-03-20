@@ -3,8 +3,9 @@
 
 #include "AbilitySystem/RFGameplayAbility_Ranged.h"
 #include "RFWeaponInstance.h"
+#include "RFEquipmentComponent.h"
 #include "RFLogMacros.h"
-#include "Collision\RFCollisionChannel.h"
+#include "Collision/RFCollisionChannel.h"
 
 // Reference by Lyra
 namespace RFConsoleVariables
@@ -36,6 +37,52 @@ void URFGameplayAbility_Ranged::ActivateAbility(const FGameplayAbilitySpecHandle
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	ClientTargetTrace();
+}
+
+bool URFGameplayAbility_Ranged::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags) const
+{
+	if (!Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags) || !ActorInfo)
+	{
+		return false;
+	}
+
+	AActor* const OwningActor = ActorInfo ? ActorInfo->AvatarActor.Get() : nullptr;
+	if (OwningActor)
+	{
+		if (URFEquipmentComponent* EquipmentComponent = OwningActor->FindComponentByClass<URFEquipmentComponent>())
+		{
+			const int32 NumStacks = GetAbilityLevel();
+			const bool bCanApplyCost = EquipmentComponent->GetMagazineAmmoCountByTag(CostTag) >= NumStacks;
+
+			// Inform other abilities why this cost cannot be applied, just Notify
+			if (!bCanApplyCost && OptionalRelevantTags)
+			{
+				OptionalRelevantTags->AddTag(FailCostTag);
+			}
+
+			return bCanApplyCost;
+		}
+	}
+
+	return true;
+}
+
+void URFGameplayAbility_Ranged::ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
+{
+	Super::ApplyCost(Handle, ActorInfo, ActivationInfo);
+
+	if (ActorInfo->IsNetAuthority())
+	{
+		if (AActor* OwningPawn = GetAvatarActorFromActorInfo())
+		{
+			if (URFEquipmentComponent* EquipmentComponent = OwningPawn->FindComponentByClass<URFEquipmentComponent>())
+			{
+				const int32 NumStacks = GetAbilityLevel();
+
+				EquipmentComponent->RemoveMagazineAmmoCountByTag(CostTag, NumStacks);
+			}
+		}
+	}
 }
 
 void URFGameplayAbility_Ranged::ClientTargetTrace()
