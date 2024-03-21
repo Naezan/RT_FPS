@@ -24,6 +24,10 @@ class UInputMappingContext;
 class URFAbilityInputData;
 struct FInputActionValue;
 
+class UTimelineComponent;
+class UCurveVector;
+class UCurveFloat;
+
 UCLASS()
 class RT_FPS_API ARFCharacter : public ACharacter, public IAbilitySystemInterface, public IAbilityInputInterface, public IRFMeshInterface
 {
@@ -50,6 +54,8 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	void SwitchAimingTrasition(const FInputActionValue& Value);
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -90,6 +96,20 @@ public:
 	/* Returns Equipment subobject */
 	FORCEINLINE URFEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
 
+	UFUNCTION(Reliable, Server)
+	void SetAiming(bool bInAiming);
+	UFUNCTION(BlueprintPure)
+	bool IsAiming() const { return bIsAiming; }
+
+private:
+	UFUNCTION()
+	void OnAimTransitionLocUpdate(FVector InLocation);
+	UFUNCTION()
+	void OnAimTransitionRotUpdate(float InRotYaw);
+
+	UFUNCTION()
+	void OnRep_IsAiming();
+
 protected:
 	// Caching ASC
 	UPROPERTY()
@@ -97,11 +117,17 @@ protected:
 
 private:
 	/** Bool for AnimBP to switch to another animation set */
-	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
 	uint8 bHasWeapon : 1;
+	UPROPERTY(ReplicatedUsing = OnRep_IsAiming, VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Aim", meta = (AllowPrivateAccess = "true"))
+	uint8 bIsAiming : 1;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Aim", meta = (AllowPrivateAccess = "true"))
+	float DefaultWalkSpeed;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Aim", meta = (AllowPrivateAccess = "true"))
+	float AimWalkSpeed;
 
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* Mesh1P;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* Mesh1P_Leg;
@@ -124,10 +150,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USceneComponent* ProceduralMeshComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<URFEquipmentComponent> EquipmentComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UProceduralAnimComponent> ProceduralAnimComponent;
 
 	/** MappingContext */
@@ -140,4 +166,15 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* AimAction;
+
+	/* Aiming Timeline */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Aim|Timeline", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UTimelineComponent> AimTimelineComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Aim|Timeline", meta = (AllowPrivateAccess = "true"))
+	UCurveVector* AimLocationCurve;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Aim|Timeline", meta = (AllowPrivateAccess = "true"))
+	UCurveFloat* AimYawRotationCurve;
 };

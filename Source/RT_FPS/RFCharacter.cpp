@@ -7,6 +7,7 @@
 #include "RFPlayerData.h"
 #include "RFLogMacros.h"
 #include "GameFramework/GameStateBase.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -19,6 +20,7 @@
 #include "RFEquipmentComponent.h"
 #include "ProceduralAnimComponent.h"
 #include "Interface/GameStateGlobalDelegateInterface.h"
+#include "Components/TimelineComponent.h"
 
 #include "Net/UnrealNetwork.h"
 #include "Net/Core/PushModel/PushModel.h"
@@ -43,6 +45,7 @@ ARFCharacter::ARFCharacter()
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
+	Mesh1P->SetIsReplicated(true);
 	Mesh1P->SetOnlyOwnerSee(true);
 	Mesh1P->SetupAttachment(ProceduralMeshComponent);
 	Mesh1P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -83,7 +86,11 @@ ARFCharacter::ARFCharacter()
 
 	EquipmentComponent = CreateDefaultSubobject<URFEquipmentComponent>(TEXT("EquipmentComponent"));
 	EquipmentComponent->SetIsReplicated(true);
+	
 	ProceduralAnimComponent = CreateDefaultSubobject<UProceduralAnimComponent>(TEXT("ProceduralAnimComponent"));
+
+	// AimTransition Timeline
+	AimTimelineComponent = CreateDefaultSubobject<UTimelineComponent>(TEXT("AimTimelineComponent"));
 }
 
 // Called when the game starts or when spawned
@@ -103,7 +110,25 @@ void ARFCharacter::BeginPlay()
 		Mesh1P->HideBoneByName(HideTPArmSocketName_Neck, EPhysBodyOp::PBO_None);
 	}
 
+	// Binding ADS transition Function
+	if (HasAuthority())
+	{
+		FOnTimelineVector AimTrasitionLocCallback;
+		AimTrasitionLocCallback.BindUFunction(this, TEXT("OnAimTransitionLocUpdate"));
+		AimTimelineComponent->AddInterpVector(AimLocationCurve, AimTrasitionLocCallback);
+
+		FOnTimelineFloat AimTrasitionRotCallback;
+		AimTrasitionRotCallback.BindUFunction(this, TEXT("OnAimTransitionRotUpdate"));
+		AimTimelineComponent->AddInterpFloat(AimYawRotationCurve, AimTrasitionRotCallback);
+	}
+
 	ProceduralAnimComponent->InitProceduralProcess(ProceduralMeshComponent, Mesh1P);
+
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		DefaultWalkSpeed = MovementComponent->MaxWalkSpeed;
+		UE_LOG(LogRF, Error, TEXT("Speed : %f, SOC : '%s'"), MovementComponent->MaxWalkSpeed, *GetClientServerContextString(this));
+	}
 }
 
 void ARFCharacter::PossessedBy(AController* NewController)
@@ -193,6 +218,8 @@ void ARFCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ARFCharacter::Look);
 
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &ARFCharacter::SwitchAimingTrasition);
+
 		const TMap<FGameplayTag, URFAbilityInputAction*> AllAbilityInputMap = GetAllAbilityInputMap();
 		for (const auto& InputInfo : AllAbilityInputMap)
 		{
@@ -244,6 +271,11 @@ void ARFCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ARFCharacter::SwitchAimingTrasition(const FInputActionValue& Value)
+{
+	SetAiming(!bIsAiming);
 }
 
 void ARFCharacter::EquipWeapon()
@@ -390,6 +422,64 @@ UAnimInstance* ARFCharacter::GetFPAnimInstance() const
 	return FPMesh ? FPMesh->GetAnimInstance() : nullptr;
 }
 
+void ARFCharacter::SetAiming_Implementation(bool bInAiming)
+{
+	bIsAiming = bInAiming;
+
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		if (bIsAiming)
+		{
+			if (AimTimelineComponent) {
+				AimTimelineComponent->Play();
+			}
+			MovementComponent->MaxWalkSpeed = AimWalkSpeed;
+		}
+		else
+		{
+			if (AimTimelineComponent) {
+				AimTimelineComponent->Reverse();
+			}
+			MovementComponent->MaxWalkSpeed = DefaultWalkSpeed;
+		}
+	}
+
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, bIsAiming, this);
+}
+
+void ARFCharacter::OnAimTransitionLocUpdate(FVector InLocation)
+{
+	if (Mesh1P)
+	{
+		Mesh1P->SetRelativeLocation(FVector(InLocation));
+		MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, Mesh1P, this);
+	}
+}
+
+void ARFCharacter::OnAimTransitionRotUpdate(float InRotYaw)
+{
+	if (Mesh1P)
+	{
+		Mesh1P->SetRelativeRotation(FRotator(0.f, InRotYaw, 0.f));
+		MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, Mesh1P, this);
+	}
+}
+
+void ARFCharacter::OnRep_IsAiming()
+{
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		if (bIsAiming)
+		{
+			MovementComponent->MaxWalkSpeed = AimWalkSpeed;
+		}
+		else
+		{
+			MovementComponent->MaxWalkSpeed = DefaultWalkSpeed;
+		}
+	}
+}
+
 void ARFCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -398,5 +488,7 @@ void ARFCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	SharedParams.bIsPushBased = true;
 	SharedParams.RepNotifyCondition = ELifetimeRepNotifyCondition::REPNOTIFY_OnChanged;
 
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, Mesh1P, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bHasWeapon, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bIsAiming, SharedParams);
 }

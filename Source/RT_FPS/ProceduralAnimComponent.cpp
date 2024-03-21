@@ -2,10 +2,11 @@
 
 
 #include "ProceduralAnimComponent.h"
-#include "GameFramework/Character.h"
+#include "RFCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
+#include "RFLogMacros.h"
 
 // Sets default values for this component's properties
 UProceduralAnimComponent::UProceduralAnimComponent()
@@ -15,8 +16,8 @@ UProceduralAnimComponent::UProceduralAnimComponent()
 
 void UProceduralAnimComponent::InitProceduralProcess(UActorComponent* ProceduralComponent, UActorComponent* WeaponMesh)
 {
-	OwningCharacter = Cast<ACharacter>(GetOwner());
-	CharacterMovementComponent = Cast<ACharacter>(GetOwner())->GetCharacterMovement();
+	OwningCharacter = Cast<ARFCharacter>(GetOwner());
+	CharacterMovementComponent = OwningCharacter ? OwningCharacter->GetCharacterMovement() : nullptr;
 	ProceduralRootComponent = Cast<USceneComponent>(ProceduralComponent);
 	WeaponSkeletalMesh = Cast<USkeletalMeshComponent>(WeaponMesh);
 
@@ -78,6 +79,8 @@ void UProceduralAnimComponent::UpdateWalkingMovement(FVector& OutTargetLocation,
 		{
 			WalkingLocationCurve->GetTimeRange(BeginTimeLocation, EndTimeLocation);
 			TargetLocation = WalkingLocationCurve->GetVectorValue(CurveDeltaTime);
+
+			TargetLocation = OwningCharacter->IsAiming() ? TargetLocation * AimMoveScale : TargetLocation;
 		}
 		else
 		{
@@ -102,6 +105,8 @@ void UProceduralAnimComponent::UpdateWalkingMovement(FVector& OutTargetLocation,
 		{
 			IdleLocationCurve->GetTimeRange(BeginTimeLocation, EndTimeLocation);
 			TargetLocation = IdleLocationCurve->GetVectorValue(CurveDeltaTime);
+
+			TargetLocation = OwningCharacter->IsAiming() ? TargetLocation * AimIdleScale : TargetLocation;
 		}
 		else
 		{

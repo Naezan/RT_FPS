@@ -7,6 +7,7 @@
 #include "Curves/CurveVector.h"
 #include "ProceduralAnimComponent.generated.h"
 
+class ARFCharacter;
 class UCharacterMovementComponent;
 class UInputAction;
 
@@ -46,7 +47,7 @@ private:
 	float CurveDeltaTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	ACharacter* OwningCharacter;
+	ARFCharacter* OwningCharacter;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	UCharacterMovementComponent* CharacterMovementComponent;
@@ -88,6 +89,11 @@ private:
 	// 1P Arm ADS socket position that used when click right mouse button
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Anim|Aim", meta = (AllowPrivateAccess = "true"))
 		FName AimSocketName = "Point_ADS";
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Anim|Aim", meta = (AllowPrivateAccess = "true"))
+		float AimIdleScale = 0.3f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Anim|Aim", meta = (AllowPrivateAccess = "true"))
+		float AimMoveScale = 0.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Anim|Look Sway", meta = (AllowPrivateAccess = "true"))
 		float LookSwaySpeed = 6.f;

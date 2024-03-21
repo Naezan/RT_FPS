@@ -16,7 +16,7 @@ class RT_FPS_API URFAbilityInputAction : public UInputAction
 
 protected:
     //FGuids are globally unique.
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GUID")
+    UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, Category = "GUID")
     mutable FGuid InputActionGuid;
 
 public:
