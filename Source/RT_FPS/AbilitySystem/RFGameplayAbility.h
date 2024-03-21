@@ -25,9 +25,12 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	AActor* GetFPReplicatedWeaponActor() const;
-
+	UFUNCTION(BlueprintPure)
+	AActor* GetFPReplicatedWeaponActorByActorInfo(const FGameplayAbilityActorInfo& ActorInfo) const;
 	UFUNCTION(BlueprintPure)
 	AActor* GetTPReplicatedWeaponActor() const;
+	UFUNCTION(BlueprintPure)
+	AActor* GetTPReplicatedWeaponActorByActorInfo(const FGameplayAbilityActorInfo& ActorInfo) const;
 
 protected:
 	//~UGameplayAbility interface

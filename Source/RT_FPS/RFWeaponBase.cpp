@@ -28,6 +28,40 @@ void ARFWeaponBase::SetAttachedMagActor(AActor* InMagActor)
 	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, IsFPWeapon, this);
 }
 
+void ARFWeaponBase::SetFireSelectMode(EFireSelectMode InSelectMode)
+{
+	FireSelectMode = InSelectMode;
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, FireSelectMode, this);
+}
+
+void ARFWeaponBase::UpSelectMode()
+{
+	switch (FireSelectMode)
+	{
+	case EFireSelectMode::Safety:
+		FireSelectMode = EFireSelectMode::Semi;
+		break;
+	case EFireSelectMode::Semi:
+		FireSelectMode = EFireSelectMode::Auto;
+		break;
+	}
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, FireSelectMode, this);
+}
+
+void ARFWeaponBase::DownSelectMode()
+{
+	switch (FireSelectMode)
+	{
+	case EFireSelectMode::Semi:
+		FireSelectMode = EFireSelectMode::Safety;
+		break;
+	case EFireSelectMode::Auto:
+		FireSelectMode = EFireSelectMode::Semi;
+		break;
+	}
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, FireSelectMode, this);
+}
+
 void ARFWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -38,4 +72,5 @@ void ARFWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, IsFPWeapon, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, AttachedMagActor, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, FireSelectMode, SharedParams);
 }

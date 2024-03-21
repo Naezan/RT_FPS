@@ -17,21 +17,33 @@ URFWeaponInstance* URFGameplayAbility::GetWeaponInstance() const
 
 AActor* URFGameplayAbility::GetFPReplicatedWeaponActor() const
 {
-	if (AActor* OwningPawn = GetAvatarActorFromActorInfo())
+	return GetFPReplicatedWeaponActorByActorInfo(*CurrentActorInfo);
+}
+
+AActor* URFGameplayAbility::GetFPReplicatedWeaponActorByActorInfo(const FGameplayAbilityActorInfo& ActorInfo) const
+{
+	if (AActor* OwningPawn = ActorInfo.AvatarActor.Get())
 	{
 		URFEquipmentComponent* EquipmentComponent = OwningPawn->FindComponentByClass<URFEquipmentComponent>();
 		return EquipmentComponent ? EquipmentComponent->GetReplicatedFPWeapon() : nullptr;
 	}
+
 	return nullptr;
 }
 
 AActor* URFGameplayAbility::GetTPReplicatedWeaponActor() const
 {
-	if (AActor* OwningPawn = GetAvatarActorFromActorInfo())
+	return GetTPReplicatedWeaponActorByActorInfo(*CurrentActorInfo);
+}
+
+AActor* URFGameplayAbility::GetTPReplicatedWeaponActorByActorInfo(const FGameplayAbilityActorInfo& ActorInfo) const
+{
+	if (AActor* OwningPawn = ActorInfo.AvatarActor.Get())
 	{
 		URFEquipmentComponent* EquipmentComponent = OwningPawn->FindComponentByClass<URFEquipmentComponent>();
 		return EquipmentComponent ? EquipmentComponent->GetReplicatedTPWeapon() : nullptr;
 	}
+
 	return nullptr;
 }
 

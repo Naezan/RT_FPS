@@ -6,6 +6,14 @@
 #include "GameFramework/Actor.h"
 #include "RFWeaponBase.generated.h"
 
+UENUM(BlueprintType)
+enum class EFireSelectMode : uint8
+{
+	Safety,
+	Semi,
+	Auto
+};
+
 UCLASS()
 class RT_FPS_API ARFWeaponBase : public AActor
 {
@@ -26,10 +34,20 @@ public:
 	void SetAttachedMagActor(AActor* InMagActor);
 	UFUNCTION(BlueprintPure)
 	AActor* GetAttachedMagActor() const { return AttachedMagActor; }
+	UFUNCTION(BlueprintCallable)
+	void SetFireSelectMode(EFireSelectMode InSelectMode);
+	UFUNCTION(BlueprintPure)
+	EFireSelectMode GetFireSelectMode() const { return FireSelectMode; }
+	UFUNCTION(BlueprintCallable)
+	void UpSelectMode();
+	UFUNCTION(BlueprintCallable)
+	void DownSelectMode();
 
 private:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	uint8 IsFPWeapon : 1;
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<AActor> AttachedMagActor;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	EFireSelectMode FireSelectMode;
 };
