@@ -34,7 +34,7 @@ void ARFWeaponBase::SetFireSelectMode(EFireSelectMode InSelectMode)
 	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, FireSelectMode, this);
 }
 
-void ARFWeaponBase::UpSelectMode()
+EFireSelectMode ARFWeaponBase::UpSelectMode()
 {
 	switch (FireSelectMode)
 	{
@@ -46,9 +46,11 @@ void ARFWeaponBase::UpSelectMode()
 		break;
 	}
 	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, FireSelectMode, this);
+
+	return FireSelectMode;
 }
 
-void ARFWeaponBase::DownSelectMode()
+EFireSelectMode ARFWeaponBase::DownSelectMode()
 {
 	switch (FireSelectMode)
 	{
@@ -60,6 +62,8 @@ void ARFWeaponBase::DownSelectMode()
 		break;
 	}
 	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, FireSelectMode, this);
+
+	return FireSelectMode;
 }
 
 void ARFWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

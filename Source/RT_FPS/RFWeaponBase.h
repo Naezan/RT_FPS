@@ -39,9 +39,9 @@ public:
 	UFUNCTION(BlueprintPure)
 	EFireSelectMode GetFireSelectMode() const { return FireSelectMode; }
 	UFUNCTION(BlueprintCallable)
-	void UpSelectMode();
+	EFireSelectMode UpSelectMode();
 	UFUNCTION(BlueprintCallable)
-	void DownSelectMode();
+	EFireSelectMode DownSelectMode();
 
 private:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
