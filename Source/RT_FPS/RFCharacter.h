@@ -105,7 +105,7 @@ private:
 	UFUNCTION()
 	void OnAimTransitionLocUpdate(FVector InLocation);
 	UFUNCTION()
-	void OnAimTransitionRotUpdate(float InRotYaw);
+	void OnAimTransitionRotUpdate(FVector InRotation);
 
 	UFUNCTION()
 	void OnRep_IsAiming();
@@ -176,5 +176,5 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Aim|Timeline", meta = (AllowPrivateAccess = "true"))
 	UCurveVector* AimLocationCurve;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Aim|Timeline", meta = (AllowPrivateAccess = "true"))
-	UCurveFloat* AimYawRotationCurve;
+	UCurveVector* AimRotationCurve;
 };

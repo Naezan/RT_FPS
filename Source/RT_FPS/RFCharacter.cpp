@@ -117,9 +117,9 @@ void ARFCharacter::BeginPlay()
 		AimTrasitionLocCallback.BindUFunction(this, TEXT("OnAimTransitionLocUpdate"));
 		AimTimelineComponent->AddInterpVector(AimLocationCurve, AimTrasitionLocCallback);
 
-		FOnTimelineFloat AimTrasitionRotCallback;
+		FOnTimelineVector AimTrasitionRotCallback;
 		AimTrasitionRotCallback.BindUFunction(this, TEXT("OnAimTransitionRotUpdate"));
-		AimTimelineComponent->AddInterpFloat(AimYawRotationCurve, AimTrasitionRotCallback);
+		AimTimelineComponent->AddInterpVector(AimRotationCurve, AimTrasitionRotCallback);
 	}
 
 	ProceduralAnimComponent->InitProceduralProcess(ProceduralMeshComponent, Mesh1P);
@@ -456,11 +456,11 @@ void ARFCharacter::OnAimTransitionLocUpdate(FVector InLocation)
 	}
 }
 
-void ARFCharacter::OnAimTransitionRotUpdate(float InRotYaw)
+void ARFCharacter::OnAimTransitionRotUpdate(FVector InRotation)
 {
 	if (Mesh1P)
 	{
-		Mesh1P->SetRelativeRotation(FRotator(0.f, InRotYaw, 0.f));
+		Mesh1P->SetRelativeRotation(FQuat(FRotator(InRotation.X, InRotation.Y, InRotation.Z)));
 		MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, Mesh1P, this);
 	}
 }
