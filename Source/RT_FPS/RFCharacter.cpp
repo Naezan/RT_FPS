@@ -8,6 +8,7 @@
 #include "RFLogMacros.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -34,10 +35,18 @@ ARFCharacter::ARFCharacter()
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(34.f, 96.0f);
 
+	FirstPersonSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
+	FirstPersonSpringArmComponent->SetupAttachment(GetCapsuleComponent());
+	FirstPersonSpringArmComponent->TargetArmLength = 5.0f;
+	FirstPersonSpringArmComponent->bDoCollisionTest = false;
+	FirstPersonSpringArmComponent->bUsePawnControlRotation = false;
+	FirstPersonSpringArmComponent->bEnableCameraLag = true;
+	FirstPersonSpringArmComponent->CameraLagSpeed = 20.f;
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
-	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.f, 0.f, 70.f));
+	FirstPersonCameraComponent->SetupAttachment(FirstPersonSpringArmComponent);
+	FirstPersonCameraComponent->SetRelativeLocation(FVector(40.f, 0.f, 70.f));
+	FirstPersonCameraComponent->FieldOfView = 110.f;
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	ProceduralMeshComponent = CreateDefaultSubobject<USceneComponent>(TEXT("ProceduralMeshComponent"));
@@ -57,22 +66,8 @@ ARFCharacter::ARFCharacter()
 	// Stop draw shadow on 1p mesh
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
-	Mesh1P->SetRelativeLocation(FVector(-25.f, -15.f, -156.f));
-	Mesh1P->SetRelativeRotation(FRotator(0.f, 0.f, -90.f));
-
-	Mesh1P_Leg = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P_Leg"));
-	Mesh1P_Leg->SetOnlyOwnerSee(true);
-	Mesh1P_Leg->SetupAttachment(GetCapsuleComponent());
-	Mesh1P_Leg->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	Mesh1P_Leg->SetCollisionProfileName(FName("NoCollision"));
-	// Always animation pose when far from other players
-	Mesh1P_Leg->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
-	// Prevent attach decal on 1p mesh
-	Mesh1P_Leg->bReceivesDecals = false;
-	// Stop draw shadow on 1p mesh
-	Mesh1P_Leg->bCastDynamicShadow = false;
-	Mesh1P_Leg->CastShadow = false;
-	Mesh1P_Leg->SetRelativeLocation(FVector(0.f, 0.f, -166.f));
+	Mesh1P->SetRelativeLocation(FVector(-28.883224f, -3.914962f, -160.0f));
+	Mesh1P->SetRelativeRotation(FRotator(0.f, -100.349765f, 0.f));
 
 	GetMesh()->SetOwnerNoSee(true);
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
@@ -83,6 +78,20 @@ ARFCharacter::ARFCharacter()
 	// Trigger event when character walk to event zone
 	GetMesh()->SetGenerateOverlapEvents(true);
 	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -96.f));
+	GetMesh()->SetRelativeRotation(FRotator(0.f, 0.f, -90.f));
+
+	Mesh1P_Leg = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P_Leg"));
+	Mesh1P_Leg->SetOnlyOwnerSee(true);
+	Mesh1P_Leg->SetupAttachment(GetMesh());
+	Mesh1P_Leg->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Mesh1P_Leg->SetCollisionProfileName(FName("NoCollision"));
+	// Always animation pose when far from other players
+	Mesh1P_Leg->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	// Prevent attach decal on 1p mesh
+	Mesh1P_Leg->bReceivesDecals = false;
+	// Stop draw shadow on 1p mesh
+	Mesh1P_Leg->bCastDynamicShadow = false;
+	Mesh1P_Leg->CastShadow = false;
 
 	EquipmentComponent = CreateDefaultSubobject<URFEquipmentComponent>(TEXT("EquipmentComponent"));
 	EquipmentComponent->SetIsReplicated(true);
@@ -103,15 +112,15 @@ void ARFCharacter::BeginPlay()
 	{
 		Mesh1P_Leg->HideBoneByName(HideTPArmSocketName_L, EPhysBodyOp::PBO_None);
 		Mesh1P_Leg->HideBoneByName(HideTPArmSocketName_R, EPhysBodyOp::PBO_None);
-		Mesh1P_Leg->HideBoneByName(HideTPArmSocketName_Neck, EPhysBodyOp::PBO_None);
+		Mesh1P_Leg->HideBoneByName(HideTPArmSocketName_Spine, EPhysBodyOp::PBO_None);
 
 		Mesh1P->HideBoneByName(HideFPThighSocketName_L, EPhysBodyOp::PBO_None);
 		Mesh1P->HideBoneByName(HideFPThighSocketName_R, EPhysBodyOp::PBO_None);
-		Mesh1P->HideBoneByName(HideTPArmSocketName_Neck, EPhysBodyOp::PBO_None);
+		Mesh1P->HideBoneByName(HideFPArmSocketName_Neck, EPhysBodyOp::PBO_None);
 	}
 
 	// Binding ADS transition Function
-	if (HasAuthority())
+	if (AimTimelineComponent && HasAuthority())
 	{
 		FOnTimelineVector AimTrasitionLocCallback;
 		AimTrasitionLocCallback.BindUFunction(this, TEXT("OnAimTransitionLocUpdate"));
@@ -124,11 +133,7 @@ void ARFCharacter::BeginPlay()
 
 	ProceduralAnimComponent->InitProceduralProcess(ProceduralMeshComponent, Mesh1P);
 
-	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
-	{
-		DefaultWalkSpeed = MovementComponent->MaxWalkSpeed;
-		UE_LOG(LogRF, Error, TEXT("Speed : %f, SOC : '%s'"), MovementComponent->MaxWalkSpeed, *GetClientServerContextString(this));
-	}
+	InitializeMovement();
 }
 
 void ARFCharacter::PossessedBy(AController* NewController)
@@ -181,6 +186,22 @@ void ARFCharacter::OnRep_PlayerState()
 	}
 }
 
+void ARFCharacter::InitializeMovement()
+{
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
+	{
+		
+		// Enable to crouch
+		MovementComponent->GetNavAgentPropertiesRef().bCanCrouch = true;
+		MovementComponent->CrouchedHalfHeight = 60.f;
+		MovementComponent->MaxWalkSpeed = 300.f;
+		MovementComponent->MaxWalkSpeedCrouched = 200.f;
+
+		// Caching default speed for ADS
+		DefaultWalkSpeed = MovementComponent->MaxWalkSpeed;
+	}
+}
+
 void ARFCharacter::InputInitialized()
 {
 	// Add Input Mapping Context
@@ -217,7 +238,7 @@ void ARFCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ARFCharacter::Move);
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ARFCharacter::Look);
-
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this, &ARFCharacter::SwitchCrouch);
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &ARFCharacter::SwitchAimingTrasition);
 
 		const TMap<FGameplayTag, URFAbilityInputAction*> AllAbilityInputMap = GetAllAbilityInputMap();
@@ -271,6 +292,32 @@ void ARFCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ARFCharacter::SwitchCrouch(const FInputActionValue& Value)
+{
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Crouch();
+	}
+}
+
+void ARFCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+
+	FirstPersonSpringArmComponent->CameraLagSpeed = 10.f;
+}
+
+void ARFCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+
+	FirstPersonSpringArmComponent->CameraLagSpeed = 20.f;
 }
 
 void ARFCharacter::SwitchAimingTrasition(const FInputActionValue& Value)
