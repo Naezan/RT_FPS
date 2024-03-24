@@ -41,7 +41,7 @@ ARFCharacter::ARFCharacter()
 	FirstPersonSpringArmComponent->bDoCollisionTest = false;
 	FirstPersonSpringArmComponent->bUsePawnControlRotation = false;
 	FirstPersonSpringArmComponent->bEnableCameraLag = true;
-	FirstPersonSpringArmComponent->CameraLagSpeed = 20.f;
+	FirstPersonSpringArmComponent->CameraLagSpeed = 30.f;
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(FirstPersonSpringArmComponent);
@@ -80,18 +80,18 @@ ARFCharacter::ARFCharacter()
 	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -96.f));
 	GetMesh()->SetRelativeRotation(FRotator(0.f, 0.f, -90.f));
 
-	Mesh1P_Leg = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P_Leg"));
-	Mesh1P_Leg->SetOnlyOwnerSee(true);
-	Mesh1P_Leg->SetupAttachment(GetMesh());
-	Mesh1P_Leg->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	Mesh1P_Leg->SetCollisionProfileName(FName("NoCollision"));
+	Mesh_Leg = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh_Leg"));
+	Mesh_Leg->SetupAttachment(GetMesh());
+	Mesh_Leg->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Mesh_Leg->SetCollisionProfileName(FName("NoCollision"));
 	// Always animation pose when far from other players
-	Mesh1P_Leg->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	Mesh_Leg->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	
 	// Prevent attach decal on 1p mesh
-	Mesh1P_Leg->bReceivesDecals = false;
+	//Mesh_Leg->bReceivesDecals = false;
 	// Stop draw shadow on 1p mesh
-	Mesh1P_Leg->bCastDynamicShadow = false;
-	Mesh1P_Leg->CastShadow = false;
+	//Mesh_Leg->bCastDynamicShadow = false;
+	//Mesh_Leg->CastShadow = false;
 
 	EquipmentComponent = CreateDefaultSubobject<URFEquipmentComponent>(TEXT("EquipmentComponent"));
 	EquipmentComponent->SetIsReplicated(true);
@@ -106,18 +106,6 @@ ARFCharacter::ARFCharacter()
 void ARFCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Hide 3P mesh on player accept lowerbody
-	if (IsLocallyControlled())
-	{
-		Mesh1P_Leg->HideBoneByName(HideTPArmSocketName_L, EPhysBodyOp::PBO_None);
-		Mesh1P_Leg->HideBoneByName(HideTPArmSocketName_R, EPhysBodyOp::PBO_None);
-		Mesh1P_Leg->HideBoneByName(HideTPArmSocketName_Spine, EPhysBodyOp::PBO_None);
-
-		Mesh1P->HideBoneByName(HideFPThighSocketName_L, EPhysBodyOp::PBO_None);
-		Mesh1P->HideBoneByName(HideFPThighSocketName_R, EPhysBodyOp::PBO_None);
-		Mesh1P->HideBoneByName(HideFPArmSocketName_Neck, EPhysBodyOp::PBO_None);
-	}
 
 	// Binding ADS transition Function
 	if (AimTimelineComponent && HasAuthority())
@@ -190,12 +178,12 @@ void ARFCharacter::InitializeMovement()
 {
 	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement())
 	{
-		
 		// Enable to crouch
 		MovementComponent->GetNavAgentPropertiesRef().bCanCrouch = true;
 		MovementComponent->CrouchedHalfHeight = 60.f;
 		MovementComponent->MaxWalkSpeed = 300.f;
 		MovementComponent->MaxWalkSpeedCrouched = 200.f;
+		StandCameraLagSpeed = FirstPersonSpringArmComponent->CameraLagSpeed;
 
 		// Caching default speed for ADS
 		DefaultWalkSpeed = MovementComponent->MaxWalkSpeed;
@@ -310,14 +298,14 @@ void ARFCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightA
 {
 	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 
-	FirstPersonSpringArmComponent->CameraLagSpeed = 10.f;
+	FirstPersonSpringArmComponent->CameraLagSpeed = CrouchTransitionCameraLagSpeed;
 }
 
 void ARFCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 
-	FirstPersonSpringArmComponent->CameraLagSpeed = 20.f;
+	FirstPersonSpringArmComponent->CameraLagSpeed = StandCameraLagSpeed;
 }
 
 void ARFCharacter::SwitchAimingTrasition(const FInputActionValue& Value)

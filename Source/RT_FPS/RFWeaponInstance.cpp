@@ -40,12 +40,6 @@ void URFWeaponInstance::InitializeWeaponAnimInstance()
 	{
 		TPMesh->LinkAnimClassLayers(TPAnimInstance);
 	}
-
-	USkeletalMeshComponent* LegMesh = GetCharacterFPLegMesh();
-	if (LegMesh && TPAnimInstance != nullptr)
-	{
-		LegMesh->LinkAnimClassLayers(TPAnimInstance);
-	}
 }
 
 void URFWeaponInstance::EquipWeapon()
