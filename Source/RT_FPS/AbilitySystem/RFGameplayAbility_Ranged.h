@@ -19,6 +19,7 @@ class RT_FPS_API URFGameplayAbility_Ranged : public URFGameplayAbility
 protected:
 	//~UGameplayAbility interface
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 	virtual bool CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
 	virtual void ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
 	//~End of UGameplayAbility interface
@@ -27,6 +28,11 @@ public:
 	// Client Only. Found target use line trace and sweep trace then send targetdata to server.
 	UFUNCTION(BlueprintCallable)
 	void ClientTargetTrace();
+	void OnTargetDataReadyCallback(const FGameplayAbilityTargetDataHandle& InData, FGameplayTag ApplicationTag);
+
+protected:
+	UFUNCTION(BlueprintImplementableEvent)
+	void ProcecssTargetData(const FGameplayAbilityTargetDataHandle& TargetData);
 
 private:
 	void PerformBulletTrace(OUT TArray<FHitResult>& OutHit);

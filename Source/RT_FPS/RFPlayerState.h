@@ -22,6 +22,8 @@ class RT_FPS_API ARFPlayerState : public APlayerState, public IAbilitySystemInte
 public:
 	ARFPlayerState(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
+	virtual void PostInitializeComponents() override;
+
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemComponent")
 	URFAbilitySystemComponent* GetRFAbilitySystemComponent() const { return AbilitySystemComponent; }
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;

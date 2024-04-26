@@ -19,7 +19,9 @@ void URFAbilitySet::GiveAbilities(UAbilitySystemComponent* AbilitySystemComponen
 		// Only player has InputID
 		if (IAbilityInputInterface* OwningCharacter = Cast<IAbilityInputInterface>(AbilitySystemComponent->GetAvatarActor()))
 		{
+			OwningCharacter->ResetInputIDByTag(AbilityInfo.InputTag);
 			InputID = OwningCharacter->GetAbilityInputActionIDByTag(AbilityInfo.InputTag);
+			OwningCharacter->RegisterInputIDByTag(InputID, AbilityInfo.InputTag);
 		}
 
 		FGameplayAbilitySpec AbilitySpec(AbilityInfo.GameplayAbilityClass, AbilityInfo.AbilityLevel, InputID);

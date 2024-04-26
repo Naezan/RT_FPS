@@ -40,6 +40,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 
 	// Client only
@@ -49,6 +50,8 @@ protected:
 	void InitializeMovement();
 	UFUNCTION()
 	void InputInitialized();
+	UFUNCTION(Server, Reliable)
+	void ServerEquipWeapon();
 	UFUNCTION()
 	void StartEquipWeapon();
 
@@ -86,6 +89,8 @@ public:
 	URFAbilityInputData* GetAbilityInputData() const;
 	virtual const UInputAction* GetAbilityInputActionByTag(FGameplayTag InputTag) const override;
 	virtual int32 GetAbilityInputActionIDByTag(FGameplayTag InputTag) const override;
+	virtual void ResetInputIDByTag(FGameplayTag InputTag) const override;
+	virtual void RegisterInputIDByTag(int32 InputID, FGameplayTag InputTag) override;
 	const TArray<URFAbilityInputAction*> GetAllAbilityInputAction() const;
 	const TMap<FGameplayTag, URFAbilityInputAction*> GetAllAbilityInputMap() const;
 	//~End of WeaponAbility
@@ -116,6 +121,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_IsAiming();
+
+	UFUNCTION(Client, Reliable)
+	void ClientRegisterInputID(int32 InputID, FGameplayTag InputTag);
 
 protected:
 	// Caching ASC
@@ -169,6 +177,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* AimAction;
+
+	UPROPERTY(VisibleAnywhere, Category = Input, meta = (AllowPrivateAccess = "true"))
+	TMap<FGameplayTag, int32> AbilityInputID;
 
 	/* Aiming Timeline */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Aim|Timeline", meta = (AllowPrivateAccess = "true"))

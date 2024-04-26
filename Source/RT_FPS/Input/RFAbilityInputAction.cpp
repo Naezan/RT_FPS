@@ -3,3 +3,7 @@
 
 #include "Input/RFAbilityInputAction.h"
 
+void URFAbilityInputAction::ResetInputID() const
+{
+	InputActionGuid.Invalidate();
+}

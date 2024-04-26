@@ -2,6 +2,7 @@
 
 
 #include "RFWeaponBase.h"
+#include "Interface/MagazineInterface.h"
 #include "Net/UnrealNetwork.h"
 #include "Net/Core/PushModel/PushModel.h"
 
@@ -22,10 +23,27 @@ void ARFWeaponBase::SetFPAttribute(bool IsFP)
 	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, IsFPWeapon, this);
 }
 
+bool ARFWeaponBase::IsBulletLoaded() const
+{
+	return bBulletLoaded;
+}
+
+void ARFWeaponBase::BulletLoad()
+{
+	bBulletLoaded = true;
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, bBulletLoaded, this);
+}
+
+void ARFWeaponBase::BulletUnLoad()
+{
+	bBulletLoaded = false;
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, bBulletLoaded, this);
+}
+
 void ARFWeaponBase::SetAttachedMagActor(AActor* InMagActor)
 {
 	AttachedMagActor = InMagActor;
-	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, IsFPWeapon, this);
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, AttachedMagActor, this);
 }
 
 void ARFWeaponBase::SetFireSelectMode(EFireSelectMode InSelectMode)
@@ -66,6 +84,14 @@ EFireSelectMode ARFWeaponBase::DownSelectMode()
 	return FireSelectMode;
 }
 
+void ARFWeaponBase::ReplaceForEmptyMesh()
+{
+	if (IMagazineInterface* MagazinInterface = Cast<IMagazineInterface>(AttachedMagActor))
+	{
+		MagazinInterface->OnAllAmmoConsumed();
+	}
+}
+
 void ARFWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -75,6 +101,7 @@ void ARFWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	SharedParams.RepNotifyCondition = ELifetimeRepNotifyCondition::REPNOTIFY_OnChanged;
 
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, IsFPWeapon, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bBulletLoaded, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, AttachedMagActor, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, FireSelectMode, SharedParams);
 }

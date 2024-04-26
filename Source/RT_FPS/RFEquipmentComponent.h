@@ -31,17 +31,25 @@ public:
 	// CameraShake, SpreadCurve, RecoilPattern, WeaponHitDecal properties
 	bool OnEquip(TSubclassOf<URFWeaponInstance> EquipWeaponInstance);
 	bool OnUnEquip();
+	void OnEquiped();
 
 	void InitializeMagazineData(int32 DefaultMagazineIndex = 0);
 	UFUNCTION(BlueprintPure)
 	int32 GetMagazineAmmoCountByTag(FGameplayTag MagazineTag);
 	UFUNCTION(BlueprintPure)
 	int32 GetCurrentMagazineCapacity() const;
+	// Whether the current weapon contains bullets
+	UFUNCTION(BlueprintPure)
+	bool IsBulletLoaded() const;
 	UFUNCTION(BlueprintCallable)
 	void RemoveMagazineAmmoCountByTag(FGameplayTag MagazineTag, int32 StackCount);
 
 	UFUNCTION(BlueprintCallable)
 	void ReloadNextMagazine();
+	UFUNCTION(BlueprintCallable)
+	void LoadBullet();
+	UFUNCTION(BlueprintCallable)
+	void UnLoadBullet();
 
 	UFUNCTION(BlueprintPure)
 	AActor* GetReplicatedFPWeapon() const;

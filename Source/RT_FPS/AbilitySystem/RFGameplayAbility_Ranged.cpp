@@ -2,6 +2,8 @@
 
 
 #include "AbilitySystem/RFGameplayAbility_Ranged.h"
+#include "AbilitySystemComponent.h"
+#include "Abilities/GameplayAbilityTargetTypes.h"
 #include "RFWeaponInstance.h"
 #include "RFEquipmentComponent.h"
 #include "RFLogMacros.h"
@@ -36,7 +38,22 @@ void URFGameplayAbility_Ranged::ActivateAbility(const FGameplayAbilitySpecHandle
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	UAbilitySystemComponent* MyAbilityComponent = CurrentActorInfo->AbilitySystemComponent.Get();
+	check(MyAbilityComponent);
+
+	MyAbilityComponent->AbilityTargetDataSetDelegate(CurrentSpecHandle, CurrentActivationInfo.GetActivationPredictionKey()).AddUObject(this, &ThisClass::OnTargetDataReadyCallback);
+
 	ClientTargetTrace();
+}
+
+void URFGameplayAbility_Ranged::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+	UAbilitySystemComponent* MyAbilityComponent = CurrentActorInfo->AbilitySystemComponent.Get();
+	check(MyAbilityComponent);
+
+	MyAbilityComponent->AbilityTargetDataSetDelegate(CurrentSpecHandle, CurrentActivationInfo.GetActivationPredictionKey()).RemoveAll(this);
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 bool URFGameplayAbility_Ranged::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, OUT FGameplayTagContainer* OptionalRelevantTags) const
@@ -53,14 +70,16 @@ bool URFGameplayAbility_Ranged::CheckCost(const FGameplayAbilitySpecHandle Handl
 		{
 			const int32 NumStacks = GetAbilityLevel();
 			const bool bCanApplyCost = EquipmentComponent->GetMagazineAmmoCountByTag(CostTag) >= NumStacks;
+			const bool bHasBullet = EquipmentComponent->IsBulletLoaded();
 
 			// Inform other abilities why this cost cannot be applied, just Notify
-			if (!bCanApplyCost && OptionalRelevantTags)
+			// The bullet must not be loaded!!
+			if (!bCanApplyCost && !bHasBullet && OptionalRelevantTags)
 			{
 				OptionalRelevantTags->AddTag(FailCostTag);
 			}
 
-			return bCanApplyCost;
+			return bCanApplyCost || bHasBullet;
 		}
 	}
 
@@ -79,7 +98,14 @@ void URFGameplayAbility_Ranged::ApplyCost(const FGameplayAbilitySpecHandle Handl
 			{
 				const int32 NumStacks = GetAbilityLevel();
 
-				EquipmentComponent->RemoveMagazineAmmoCountByTag(CostTag, NumStacks);
+				if (EquipmentComponent->GetMagazineAmmoCountByTag(CostTag) > 0)
+				{
+					EquipmentComponent->RemoveMagazineAmmoCountByTag(CostTag, NumStacks);
+				}
+				else // If the magazine is empty, check the currently loaded bullet.
+				{
+					EquipmentComponent->UnLoadBullet();
+				}
 			}
 		}
 	}
@@ -102,13 +128,40 @@ void URFGameplayAbility_Ranged::ClientTargetTrace()
 #if ENABLE_DRAW_DEBUG
 			if (RFConsoleVariables::DrawBulletHitDuration > 0.0f)
 			{
-				DrawDebugPoint(GetWorld(), FoundHit.ImpactPoint, RFConsoleVariables::DrawBulletHitRadius, FColor::Red, false, RFConsoleVariables::DrawBulletHitRadius);
+				DrawDebugSphere(GetWorld(), FoundHit.ImpactPoint, RFConsoleVariables::DrawBulletHitRadius, 16, FColor::Red, false, RFConsoleVariables::DrawBulletHitDuration);
 			}
 #endif
 		}
 	}
 
-	//SendTargetDataToServer();
+	FGameplayAbilityTargetDataHandle TargetDataHandle;
+	for (const FHitResult& FoundHit : FoundTargetHit)
+	{
+		FGameplayAbilityTargetData_SingleTargetHit* NewTargetData = new FGameplayAbilityTargetData_SingleTargetHit();
+		NewTargetData->HitResult = FoundHit;
+		TargetDataHandle.Add(NewTargetData);
+	}
+
+	OnTargetDataReadyCallback(TargetDataHandle, FGameplayTag());
+}
+
+void URFGameplayAbility_Ranged::OnTargetDataReadyCallback(const FGameplayAbilityTargetDataHandle& InData, FGameplayTag ApplicationTag)
+{
+	UAbilitySystemComponent* MyAbilityComponent = CurrentActorInfo->AbilitySystemComponent.Get();
+	check(MyAbilityComponent);
+
+	FScopedPredictionWindow	ScopedPrediction(MyAbilityComponent);
+
+	// Only Client
+	if (IsPredictingClient())
+	{
+		MyAbilityComponent->CallServerSetReplicatedTargetData(CurrentSpecHandle, CurrentActivationInfo.GetActivationPredictionKey(), InData, ApplicationTag, MyAbilityComponent->ScopedPredictionKey);
+	}
+
+	// Server Call
+	ProcecssTargetData(InData);
+
+	MyAbilityComponent->ConsumeClientReplicatedTargetData(CurrentSpecHandle, CurrentActivationInfo.GetActivationPredictionKey());
 }
 
 void URFGameplayAbility_Ranged::PerformBulletTrace(OUT TArray<FHitResult>& OutHit)
@@ -199,11 +252,11 @@ FHitResult URFGameplayAbility_Ranged::BulletTrace(OUT TArray<FHitResult>& OutHit
 	TraceParams.bReturnPhysicalMaterial = true;
 	if (SweepRadius > 0.f)
 	{
-		GetWorld()->SweepMultiByChannel(BulletHits, TraceStart, TraceEnd, FQuat::Identity, TraceChannel_Weapon_Ranged, FCollisionShape::MakeSphere(SweepRadius));
+		GetWorld()->SweepMultiByChannel(BulletHits, TraceStart, TraceEnd, FQuat::Identity, TraceChannel_Weapon_Ranged, FCollisionShape::MakeSphere(SweepRadius), TraceParams);
 	}
 	else
 	{
-		GetWorld()->LineTraceMultiByChannel(BulletHits, TraceStart, TraceEnd, TraceChannel_Weapon_Ranged);
+		GetWorld()->LineTraceMultiByChannel(BulletHits, TraceStart, TraceEnd, TraceChannel_Weapon_Ranged, TraceParams);
 	}
 
 	FHitResult HitInfo(EForceInit::ForceInit);

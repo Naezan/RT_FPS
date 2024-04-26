@@ -18,6 +18,11 @@ ARFPlayerState::ARFPlayerState(const FObjectInitializer& ObjectInitializer)
 	PlayerTeamID = FGenericTeamId::NoTeam;
 }
 
+void ARFPlayerState::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+}
+
 UAbilitySystemComponent* ARFPlayerState::GetAbilitySystemComponent() const
 {
 	return GetRFAbilitySystemComponent();

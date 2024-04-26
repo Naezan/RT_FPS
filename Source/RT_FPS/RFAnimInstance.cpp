@@ -4,6 +4,7 @@
 #include "RFAnimInstance.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Interface/RFMeshInterface.h"
 
 void URFAnimInstance::NativeInitializeAnimation()
 {

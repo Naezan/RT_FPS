@@ -23,22 +23,23 @@ void URFWeaponInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 	DOREPLIFETIME(ThisClass, FPEquippedWeapon);
 	DOREPLIFETIME(ThisClass, TPEquippedWeapon);
-	DOREPLIFETIME(ThisClass, FPEquippedWeaponMag);
-	DOREPLIFETIME(ThisClass, TPEquippedWeaponMag);
+	DOREPLIFETIME(ThisClass, FPWeaponMag);
+	DOREPLIFETIME(ThisClass, TPWeaponMag);
 }
 
 void URFWeaponInstance::InitializeWeaponAnimInstance()
 {
-	USkeletalMeshComponent* FPMesh = GetCharacterFPMesh();
-	if (FPMesh && FPAnimInstance != nullptr)
+	if(UpperAnimInstance != nullptr)
 	{
-		FPMesh->LinkAnimClassLayers(FPAnimInstance);
-	}
+		if (USkeletalMeshComponent* FPMesh = GetCharacterFPMesh())
+		{
+			FPMesh->LinkAnimClassLayers(UpperAnimInstance);
+		}
 
-	USkeletalMeshComponent* TPMesh = GetCharacterTPMesh();
-	if (TPMesh && TPAnimInstance != nullptr)
-	{
-		TPMesh->LinkAnimClassLayers(TPAnimInstance);
+		if (USkeletalMeshComponent* TPMesh = GetCharacterTPMesh())
+		{
+			TPMesh->LinkAnimClassLayers(UpperAnimInstance);
+		}
 	}
 }
 
@@ -70,8 +71,8 @@ void URFWeaponInstance::UnEquipWeapon()
 	TPEquippedWeapon->Destroy();
 	FPEquippedWeapon = nullptr;
 	TPEquippedWeapon = nullptr;
-	FPEquippedWeaponMag = nullptr;
-	TPEquippedWeaponMag = nullptr;
+	FPWeaponMag = nullptr;
+	TPWeaponMag = nullptr;
 }
 
 void URFWeaponInstance::SpawnWeapon()
@@ -97,26 +98,28 @@ void URFWeaponInstance::SpawnWeapon()
 
 void URFWeaponInstance::SpawnWeaponMagazine()
 {
-	FPEquippedWeaponMag = SpawnActorByMesh(
-	WeaponMagazineClass, 
-	FPEquippedWeapon, 
-	GetWeaponMesh(FPEquippedWeapon), 
-	FAttachmentTransformRules::KeepRelativeTransform, 
-	MagAttachSocketName);
+	FPWeaponMag = SpawnActorByMesh(
+		WeaponMagazineClass,
+		FPEquippedWeapon,
+		GetWeaponMesh(FPEquippedWeapon),
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		MagAttachSocketName);
+	FPWeaponMag->SetActorRelativeTransform(FTransform::Identity);
 	if (ARFWeaponBase* FPWeapon = Cast<ARFWeaponBase>(FPEquippedWeapon))
 	{
-		FPWeapon->SetAttachedMagActor(FPEquippedWeaponMag);
+		FPWeapon->SetAttachedMagActor(FPWeaponMag);
 	}
 
-	TPEquippedWeaponMag = SpawnActorByMesh(
-	WeaponMagazineClass, 
-	TPEquippedWeapon, 
-	GetWeaponMesh(TPEquippedWeapon), 
-	FAttachmentTransformRules::KeepRelativeTransform, 
-	MagAttachSocketName);
+	TPWeaponMag = SpawnActorByMesh(
+		WeaponMagazineClass,
+		TPEquippedWeapon,
+		GetWeaponMesh(TPEquippedWeapon),
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		MagAttachSocketName);
+	TPWeaponMag->SetActorRelativeTransform(FTransform::Identity);
 	if (ARFWeaponBase* TPWeapon = Cast<ARFWeaponBase>(TPEquippedWeapon))
 	{
-		TPWeapon->SetAttachedMagActor(TPEquippedWeaponMag);
+		TPWeapon->SetAttachedMagActor(TPWeaponMag);
 	}
 }
 
@@ -126,7 +129,6 @@ AActor* URFWeaponInstance::SpawnActorByMesh(TSubclassOf<AActor> ActorClass, AAct
 
 	// if you don't AttachToActor is null
 	AttachToActor->FinishSpawning(FTransform::Identity, true);
-	AttachToActor->SetActorRelativeTransform(FTransform::Identity);
 
 	if (AttachMesh)
 	{
@@ -172,10 +174,56 @@ const FVector URFWeaponInstance::GetMuzzleLocation() const
 {
 	if (USkeletalMeshComponent* WeaponMesh = Cast<USkeletalMeshComponent>(FPEquippedWeapon->GetRootComponent()))
 	{
-		return WeaponMesh->GetSocketLocation(FName("Muzzle"));
+		return WeaponMesh->GetSocketLocation(MuzzleSocketName);
 	}
 
 	return FVector();
+}
+
+void URFWeaponInstance::ReplaceToEmptyAmmo()
+{
+	if (IMagazineInterface* MagazinInterface = Cast<IMagazineInterface>(FPWeaponMag))
+	{
+		MagazinInterface->OnAllAmmoConsumed();
+	}
+	if (IMagazineInterface* MagazinInterface = Cast<IMagazineInterface>(TPWeaponMag))
+	{
+		MagazinInterface->OnAllAmmoConsumed();
+	}
+}
+
+bool URFWeaponInstance::IsBulletLoaded()
+{
+	if (ARFWeaponBase* FPWeapon = Cast<ARFWeaponBase>(FPEquippedWeapon))
+	{
+		return FPWeapon->IsBulletLoaded();
+	}
+
+	return false;
+}
+
+void URFWeaponInstance::LoadBullet()
+{
+	if(ARFWeaponBase* FPWeapon = Cast<ARFWeaponBase>(FPEquippedWeapon))
+	{
+		FPWeapon->BulletLoad();
+	}
+	if (ARFWeaponBase* TPWeapon = Cast<ARFWeaponBase>(TPEquippedWeapon))
+	{
+		TPWeapon->BulletLoad();
+	}
+}
+
+void URFWeaponInstance::UnLoadBullet()
+{
+	if (ARFWeaponBase* FPWeapon = Cast<ARFWeaponBase>(FPEquippedWeapon))
+	{
+		FPWeapon->BulletUnLoad();
+	}
+	if (ARFWeaponBase* TPWeapon = Cast<ARFWeaponBase>(TPEquippedWeapon))
+	{
+		TPWeapon->BulletUnLoad();
+	}
 }
 
 void URFWeaponInstance::OnRep_FPEquippedWeapon()
@@ -188,12 +236,12 @@ void URFWeaponInstance::OnRep_TPEquippedWeapon()
 	UE_LOG(LogRF, Warning, TEXT("[%s]"), *RF_CUR_CLASS_FUNC);
 }
 
-void URFWeaponInstance::OnRep_FPEquippedWeaponMag()
+void URFWeaponInstance::OnRep_FPWeaponMag()
 {
 	UE_LOG(LogRF, Warning, TEXT("[%s]"), *RF_CUR_CLASS_FUNC);
 }
 
-void URFWeaponInstance::OnRep_TPEquippedWeaponMag()
+void URFWeaponInstance::OnRep_TPWeaponMag()
 {
 	UE_LOG(LogRF, Warning, TEXT("[%s]"), *RF_CUR_CLASS_FUNC);
 }

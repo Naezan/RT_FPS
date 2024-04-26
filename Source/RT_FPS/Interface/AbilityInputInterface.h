@@ -27,4 +27,6 @@ class RT_FPS_API IAbilityInputInterface
 public:
 	virtual const UInputAction* GetAbilityInputActionByTag(FGameplayTag InputTag) const { return nullptr; }
 	virtual int32 GetAbilityInputActionIDByTag(FGameplayTag InputTag) const { return INDEX_NONE; }
+	virtual void ResetInputIDByTag(FGameplayTag InputTag) const { }
+	virtual void RegisterInputIDByTag(int32 InputID, FGameplayTag InputTag) { }
 };

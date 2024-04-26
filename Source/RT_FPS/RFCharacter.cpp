@@ -37,15 +37,17 @@ ARFCharacter::ARFCharacter()
 
 	FirstPersonSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	FirstPersonSpringArmComponent->SetupAttachment(GetCapsuleComponent());
+	FirstPersonSpringArmComponent->SetRelativeLocation(FVector(40.f, 0.f, 70.f));
 	FirstPersonSpringArmComponent->TargetArmLength = 5.0f;
 	FirstPersonSpringArmComponent->bDoCollisionTest = false;
 	FirstPersonSpringArmComponent->bUsePawnControlRotation = false;
 	FirstPersonSpringArmComponent->bEnableCameraLag = true;
 	FirstPersonSpringArmComponent->CameraLagSpeed = 30.f;
+
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(FirstPersonSpringArmComponent);
-	FirstPersonCameraComponent->SetRelativeLocation(FVector(40.f, 0.f, 70.f));
+	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 	FirstPersonCameraComponent->FieldOfView = 110.f;
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
@@ -66,8 +68,8 @@ ARFCharacter::ARFCharacter()
 	// Stop draw shadow on 1p mesh
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
-	Mesh1P->SetRelativeLocation(FVector(-28.883224f, -3.914962f, -160.0f));
-	Mesh1P->SetRelativeRotation(FRotator(0.f, -100.349765f, 0.f));
+	Mesh1P->SetRelativeLocation(FVector(-8.0f, 0.0f, -165.5f));
+	Mesh1P->SetRelativeRotation(FRotator(0.f, -90.0f, 0.f));
 
 	GetMesh()->SetOwnerNoSee(true);
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
@@ -102,6 +104,11 @@ ARFCharacter::ARFCharacter()
 	AimTimelineComponent = CreateDefaultSubobject<UTimelineComponent>(TEXT("AimTimelineComponent"));
 }
 
+void ARFCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+}
+
 // Called when the game starts or when spawned
 void ARFCharacter::BeginPlay()
 {
@@ -114,9 +121,9 @@ void ARFCharacter::BeginPlay()
 		AimTrasitionLocCallback.BindUFunction(this, TEXT("OnAimTransitionLocUpdate"));
 		AimTimelineComponent->AddInterpVector(AimLocationCurve, AimTrasitionLocCallback);
 
-		FOnTimelineVector AimTrasitionRotCallback;
+		/*FOnTimelineVector AimTrasitionRotCallback;
 		AimTrasitionRotCallback.BindUFunction(this, TEXT("OnAimTransitionRotUpdate"));
-		AimTimelineComponent->AddInterpVector(AimRotationCurve, AimTrasitionRotCallback);
+		AimTimelineComponent->AddInterpVector(AimRotationCurve, AimTrasitionRotCallback);*/
 	}
 
 	ProceduralAnimComponent->InitProceduralProcess(ProceduralMeshComponent, Mesh1P);
@@ -135,7 +142,6 @@ void ARFCharacter::PossessedBy(AController* NewController)
 		if (ARFPlayerState* PS = GetRFPlayerState())
 		{
 			AbilitySystemComponent->InitAbilityActorInfo(PS, this);
-			StartEquipWeapon();
 		}
 		else
 		{
@@ -161,6 +167,8 @@ void ARFCharacter::OnRep_PlayerState()
 		{
 			AbilitySystemComponent->InitAbilityActorInfo(PS, this);
 			InputInitialized();
+
+			ServerEquipWeapon();
 			StartEquipWeapon();
 		}
 		else
@@ -180,7 +188,7 @@ void ARFCharacter::InitializeMovement()
 	{
 		// Enable to crouch
 		MovementComponent->GetNavAgentPropertiesRef().bCanCrouch = true;
-		MovementComponent->CrouchedHalfHeight = 60.f;
+		MovementComponent->SetCrouchedHalfHeight(60.f);
 		MovementComponent->MaxWalkSpeed = 300.f;
 		MovementComponent->MaxWalkSpeedCrouched = 200.f;
 		StandCameraLagSpeed = FirstPersonSpringArmComponent->CameraLagSpeed;
@@ -208,6 +216,11 @@ void ARFCharacter::InputInitialized()
 			}
 		}
 	}
+}
+
+void ARFCharacter::ServerEquipWeapon_Implementation()
+{
+	StartEquipWeapon();
 }
 
 void ARFCharacter::StartEquipWeapon()
@@ -244,16 +257,18 @@ void ARFCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 void ARFCharacter::OnAbilityInputPressed(FGameplayTag InputTag)
 {
-	const URFAbilityInputAction* InputAction = Cast<URFAbilityInputAction>(GetAbilityInputActionByTag(InputTag));
-
-	AbilitySystemComponent->AbilityLocalInputPressed(InputAction->GetInputID());
+	if (AbilityInputID.Contains(InputTag))
+	{
+		AbilitySystemComponent->AbilityLocalInputPressed(AbilityInputID[InputTag]);
+	}
 }
 
 void ARFCharacter::OnAbilityInputReleased(FGameplayTag InputTag)
 {
-	const URFAbilityInputAction* InputAction = Cast<URFAbilityInputAction>(GetAbilityInputActionByTag(InputTag));
-
-	AbilitySystemComponent->AbilityLocalInputReleased(InputAction->GetInputID());
+	if (AbilityInputID.Contains(InputTag))
+	{
+		AbilitySystemComponent->AbilityLocalInputReleased(AbilityInputID[InputTag]);
+	}
 }
 
 void ARFCharacter::Move(const FInputActionValue& Value)
@@ -392,6 +407,19 @@ int32 ARFCharacter::GetAbilityInputActionIDByTag(FGameplayTag InputTag) const
 	return INDEX_NONE;
 }
 
+void ARFCharacter::ResetInputIDByTag(FGameplayTag InputTag) const
+{
+	if (const URFAbilityInputAction* InputAction = Cast<URFAbilityInputAction>(GetAbilityInputActionByTag(InputTag)))
+	{
+		InputAction->ResetInputID();
+	}
+}
+
+void ARFCharacter::RegisterInputIDByTag(int32 InputID, FGameplayTag InputTag)
+{
+	ClientRegisterInputID(InputID, InputTag);
+}
+
 const TArray<URFAbilityInputAction*> ARFCharacter::GetAllAbilityInputAction() const
 {
 	URFAbilityInputData* InputData = GetAbilityInputData();
@@ -465,14 +493,17 @@ void ARFCharacter::SetAiming_Implementation(bool bInAiming)
 	{
 		if (bIsAiming)
 		{
-			if (AimTimelineComponent) {
+			if (AimTimelineComponent)
+			{
 				AimTimelineComponent->Play();
 			}
+
 			MovementComponent->MaxWalkSpeed = AimWalkSpeed;
 		}
 		else
 		{
-			if (AimTimelineComponent) {
+			if (AimTimelineComponent)
+			{
 				AimTimelineComponent->Reverse();
 			}
 			MovementComponent->MaxWalkSpeed = DefaultWalkSpeed;
@@ -486,18 +517,22 @@ void ARFCharacter::OnAimTransitionLocUpdate(FVector InLocation)
 {
 	if (Mesh1P)
 	{
-		Mesh1P->SetRelativeLocation(FVector(InLocation));
+		float DurationPct = (AimTimelineComponent->GetTimelineLength() - AimTimelineComponent->GetPlaybackPosition()) / AimTimelineComponent->GetTimelineLength();
+		float BlendPct = FMath::CubicInterp(0.f, 0.f, 1.f, 0.f, DurationPct);
+		FVector LerpLocation = FMath::Lerp(Mesh1P->GetRelativeLocation(), InLocation, BlendPct);
+		Mesh1P->SetRelativeLocation(LerpLocation);
 		MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, Mesh1P, this);
 	}
 }
 
 void ARFCharacter::OnAimTransitionRotUpdate(FVector InRotation)
 {
-	if (Mesh1P)
+	/*if (Mesh1P)
 	{
-		Mesh1P->SetRelativeRotation(FQuat(FRotator(InRotation.X, InRotation.Y, InRotation.Z)));
+		FRotator InterpRotation = FMath::RInterpTo(Mesh1P->GetRelativeRotation(), FRotator(InRotation.X, InRotation.Y, InRotation.Z), 0.03f, AimInterpSpeed);
+		Mesh1P->SetRelativeRotation(FQuat(InterpRotation));
 		MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, Mesh1P, this);
-	}
+	}*/
 }
 
 void ARFCharacter::OnRep_IsAiming()
@@ -512,6 +547,14 @@ void ARFCharacter::OnRep_IsAiming()
 		{
 			MovementComponent->MaxWalkSpeed = DefaultWalkSpeed;
 		}
+	}
+}
+
+void ARFCharacter::ClientRegisterInputID_Implementation(int32 InputID, FGameplayTag InputTag)
+{
+	if (!AbilityInputID.Contains(InputTag))
+	{
+		AbilityInputID.Add(InputTag, InputID);
 	}
 }
 

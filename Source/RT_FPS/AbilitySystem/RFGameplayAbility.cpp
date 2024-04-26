@@ -2,6 +2,7 @@
 
 
 #include "AbilitySystem/RFGameplayAbility.h"
+#include "AbilitySystem/RFAbilitySystemComponent.h"
 #include "RFWeaponInstance.h"
 #include "RFEquipmentComponent.h"
 
@@ -47,6 +48,20 @@ AActor* URFGameplayAbility::GetTPReplicatedWeaponActorByActorInfo(const FGamepla
 	return nullptr;
 }
 
+void URFGameplayAbility::TryActivateAbilityOnAdded(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec) const
+{
+	if (ActorInfo && !Spec.IsActive() && bGivenToActivate)
+	{
+		UAbilitySystemComponent* ASC = ActorInfo->AbilitySystemComponent.Get();
+		const AActor* AvatarActor = ActorInfo->AvatarActor.Get();
+
+		if (ASC && AvatarActor)
+		{
+			ASC->TryActivateAbility(Spec.Handle);
+		}
+	}
+}
+
 void URFGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
@@ -59,4 +74,13 @@ void URFGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, /* bReplicateEndAbility */ true, /* bWasCancelled */ false);
 	}
+}
+
+void URFGameplayAbility::OnGiveAbility(const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilitySpec& Spec)
+{
+	Super::OnGiveAbility(ActorInfo, Spec);
+
+	OnAbilityAdded();
+
+	TryActivateAbilityOnAdded(ActorInfo, Spec);
 }

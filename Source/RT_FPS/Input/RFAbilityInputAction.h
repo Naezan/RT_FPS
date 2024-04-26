@@ -14,11 +14,14 @@ class RT_FPS_API URFAbilityInputAction : public UInputAction
 {
 	GENERATED_BODY()
 
+public:
+    void ResetInputID() const;
+
 protected:
     //FGuids are globally unique.
     UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, Category = "GUID")
     mutable FGuid InputActionGuid;
-
+    
 public:
     // Reference : https://voidbit.dev/automate-input-action-to-gameplay-ability-bindings/
     int32 GetInputID() const

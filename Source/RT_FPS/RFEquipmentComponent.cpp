@@ -5,6 +5,7 @@
 #include "RFWeaponInstance.h"
 #include "RFLogMacros.h"
 #include "Engine/ActorChannel.h"
+#include "GameFramework/Character.h"
 #include "Net/UnrealNetwork.h"
 #include "Net/Core/PushModel/PushModel.h"
 
@@ -88,6 +89,16 @@ int32 URFEquipmentComponent::GetCurrentMagazineCapacity() const
 	return CurrentMagazineInfo.GetCurrentMagazineCapacity();
 }
 
+bool URFEquipmentComponent::IsBulletLoaded() const
+{
+	if (CurrentWeaponInstance)
+	{
+		return CurrentWeaponInstance->IsBulletLoaded();
+	}
+
+	return false;
+}
+
 void URFEquipmentComponent::RemoveMagazineAmmoCountByTag(FGameplayTag MagazineTag, int32 StackCount)
 {
 	if (MagazineAmmoData.Contains(MagazineTag))
@@ -96,6 +107,12 @@ void URFEquipmentComponent::RemoveMagazineAmmoCountByTag(FGameplayTag MagazineTa
 		MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, CurrentMagazineInfo, this);
 
 		MagazineAmmoData[MagazineTag].RemoveCurrentMagazineAmmo(StackCount);
+
+		// Change the magazine mesh when ammunition is empty
+		if (CurrentWeaponInstance && CurrentMagazineInfo.GetCurrentMagazineAmmo() <= 0)
+		{
+			CurrentWeaponInstance->ReplaceToEmptyAmmo();
+		}
 	}
 }
 
@@ -116,6 +133,22 @@ void URFEquipmentComponent::ReloadNextMagazine()
 		MagazineAmmoData[MagazineTag] = CurrentMagazineInfo;
 	}
 	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, CurrentMagazineInfo, this);
+}
+
+void URFEquipmentComponent::LoadBullet()
+{
+	if (CurrentWeaponInstance)
+	{
+		CurrentWeaponInstance->LoadBullet();
+	}
+}
+
+void URFEquipmentComponent::UnLoadBullet()
+{
+	if (CurrentWeaponInstance)
+	{
+		CurrentWeaponInstance->UnLoadBullet();
+	}
 }
 
 AActor* URFEquipmentComponent::GetReplicatedFPWeapon() const

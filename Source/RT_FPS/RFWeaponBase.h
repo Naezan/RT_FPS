@@ -30,6 +30,12 @@ public:
 	void SetFPAttribute(bool IsFP);
 	UFUNCTION(BlueprintPure)
 	bool GetFPAttribute() const { return IsFPWeapon; }
+	UFUNCTION(BlueprintPure)
+	bool IsBulletLoaded() const;
+	UFUNCTION(BlueprintCallable)
+	void BulletLoad();
+	UFUNCTION(BlueprintCallable)
+	void BulletUnLoad();
 	UFUNCTION(BlueprintCallable)
 	void SetAttachedMagActor(AActor* InMagActor);
 	UFUNCTION(BlueprintPure)
@@ -42,10 +48,14 @@ public:
 	EFireSelectMode UpSelectMode();
 	UFUNCTION(BlueprintCallable)
 	EFireSelectMode DownSelectMode();
+	UFUNCTION()
+	void ReplaceForEmptyMesh();
 
 private:
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	uint8 IsFPWeapon : 1;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	uint8 bBulletLoaded : 1;
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<AActor> AttachedMagActor;
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
