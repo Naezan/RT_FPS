@@ -3,6 +3,7 @@
 
 #include "AbilitySystem/RFAbilitySet.h"
 #include "AbilitySystemComponent.h"
+#include "GameplayEffect.h"
 #include "Interface/AbilityInputInterface.h"
 
 URFAbilitySet::URFAbilitySet(const FObjectInitializer& ObjectInitializer)
@@ -19,9 +20,12 @@ void URFAbilitySet::GiveAbilities(UAbilitySystemComponent* AbilitySystemComponen
 		// Only player has InputID
 		if (IAbilityInputInterface* OwningCharacter = Cast<IAbilityInputInterface>(AbilitySystemComponent->GetAvatarActor()))
 		{
-			OwningCharacter->ResetInputIDByTag(AbilityInfo.InputTag);
-			InputID = OwningCharacter->GetAbilityInputActionIDByTag(AbilityInfo.InputTag);
-			OwningCharacter->RegisterInputIDByTag(InputID, AbilityInfo.InputTag);
+			if (AbilityInfo.InputTag != FGameplayTag::EmptyTag)
+			{
+				OwningCharacter->ResetInputIDByTag(AbilityInfo.InputTag);
+				InputID = OwningCharacter->GetAbilityInputActionIDByTag(AbilityInfo.InputTag);
+				OwningCharacter->RegisterInputIDByTag(InputID, AbilityInfo.InputTag);
+			}
 		}
 
 		FGameplayAbilitySpec AbilitySpec(AbilityInfo.GameplayAbilityClass, AbilityInfo.AbilityLevel, InputID);
@@ -34,6 +38,13 @@ void URFAbilitySet::GiveAbilities(UAbilitySystemComponent* AbilitySystemComponen
 			ActivatableAbilitySpecHandles.Add(AbilitySystemComponent->GiveAbility(AbilitySpec));
 		}
 	}
+
+	for (const TSubclassOf<UGameplayEffect>& Attribute : Attributes)
+	{
+		const UGameplayEffect* GameplayEffect = Attribute->GetDefaultObject<UGameplayEffect>();
+
+		ActivatableEffectHandles.Add(AbilitySystemComponent->ApplyGameplayEffectToSelf(GameplayEffect, 1.f, AbilitySystemComponent->MakeEffectContext()));
+	}
 }
 
 void URFAbilitySet::RemoveAbilities(UAbilitySystemComponent* AbilitySystemComponent)
@@ -43,5 +54,14 @@ void URFAbilitySet::RemoveAbilities(UAbilitySystemComponent* AbilitySystemCompon
 		AbilitySystemComponent->ClearAbility(AbilitySpecHandle);
 	}
 
+	for (const FActiveGameplayEffectHandle& EffectHandle : ActivatableEffectHandles)
+	{
+		if (EffectHandle.IsValid())
+		{
+			AbilitySystemComponent->RemoveActiveGameplayEffect(EffectHandle);
+		}
+	}
+
 	ActivatableAbilitySpecHandles.Empty();
+	ActivatableEffectHandles.Empty();
 }

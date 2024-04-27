@@ -9,7 +9,9 @@
 
 class UAbilitySystemComponent;
 class UGameplayAbility;
+class UGameplayEffect;
 struct FGameplayAbilitySpecHandle;
+struct FActiveGameplayEffectHandle;
 
 USTRUCT()
 struct FGameplayAbilityInfo
@@ -44,7 +46,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = AbilitySet)
 	TArray<FGameplayAbilityInfo> Abilities;
 
+	UPROPERTY(EditDefaultsOnly, Category = AbilitySet)
+	TArray<TSubclassOf<UGameplayEffect>> Attributes;
+
 private:
 	UPROPERTY()
 	TArray<FGameplayAbilitySpecHandle> ActivatableAbilitySpecHandles;
+	UPROPERTY()
+	TArray<FActiveGameplayEffectHandle> ActivatableEffectHandles;
 };

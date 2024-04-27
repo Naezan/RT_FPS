@@ -13,7 +13,10 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "AbilitySystem/RFAbilitySystemComponent.h"
+#include "AbilitySystem/RFAttributeSet.h"
 #include "AbilitySystem/RFAbilityInputData.h"
+#include "GameplayEffectExtension.h"
+
 #include "Input/RFAbilityInputAction.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -50,6 +53,11 @@ ARFCharacter::ARFCharacter()
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 	FirstPersonCameraComponent->FieldOfView = 110.f;
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
+
+	DeathCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("DeathCamera"));
+	DeathCameraComponent->SetupAttachment(GetMesh(), FName("DeathHead_Sckt"));
+	DeathCameraComponent->SetRelativeLocation(FVector(0.f, 90.f, 0.f));
+	DeathCameraComponent->FieldOfView = 110.f;
 
 	ProceduralMeshComponent = CreateDefaultSubobject<USceneComponent>(TEXT("ProceduralMeshComponent"));
 	ProceduralMeshComponent->SetupAttachment(FirstPersonCameraComponent);
@@ -131,17 +139,31 @@ void ARFCharacter::BeginPlay()
 	InitializeMovement();
 }
 
+void ARFCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	if (RagDollTimer.IsValid())
+	{
+		GetWorld()->GetTimerManager().ClearTimer(RagDollTimer);
+	}
+}
+
 void ARFCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
 	AbilitySystemComponent = GetCachedAbilitySystemComponent();
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(URFAttributeSet::GetHealthAttribute()).AddUObject(this, &ThisClass::OnHealthChanged);
 
 	if (AbilitySystemComponent != nullptr)
 	{
 		if (ARFPlayerState* PS = GetRFPlayerState())
 		{
 			AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+			HealthAttributeSet = PS->GetAttributeSet();
+			HealthAttributeSet->OnOutOfHealth.AddUObject(this, &ThisClass::HandleOutOfHealth);
+			PS->GiveDefaultAbilities();
 		}
 		else
 		{
@@ -160,12 +182,15 @@ void ARFCharacter::OnRep_PlayerState()
 	Super::OnRep_PlayerState();
 
 	AbilitySystemComponent = GetCachedAbilitySystemComponent();
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(URFAttributeSet::GetHealthAttribute()).AddUObject(this, &ThisClass::OnHealthChanged);
 
 	if (AbilitySystemComponent != nullptr)
 	{
 		if (ARFPlayerState* PS = GetRFPlayerState())
 		{
 			AbilitySystemComponent->InitAbilityActorInfo(PS, this);
+			HealthAttributeSet = PS->GetAttributeSet();
+			HealthAttributeSet->OnOutOfHealth.AddUObject(this, &ThisClass::HandleOutOfHealth);
 			InputInitialized();
 
 			ServerEquipWeapon();
@@ -513,6 +538,140 @@ void ARFCharacter::SetAiming_Implementation(bool bInAiming)
 	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, bIsAiming, this);
 }
 
+void ARFCharacter::OnHealthChanged(const FOnAttributeChangeData& ChangeData)
+{
+	// TODO
+}
+
+void ARFCharacter::HandleOutOfHealth(AActor* DamageVictim, AActor* DamageCauser, const FGameplayEffectSpec& DamageEffectSpec, float DamageMagnitude)
+{
+	FGameplayEventData Payload;
+	Payload.EventTag = FGameplayTag::RequestGameplayTag(FName("GameplayEvent.Death"), false);
+	Payload.Instigator = DamageVictim;
+	Payload.Target = AbilitySystemComponent->GetAvatarActor();
+	Payload.OptionalObject = DamageEffectSpec.Def;
+	Payload.ContextHandle = DamageEffectSpec.GetEffectContext();
+	Payload.InstigatorTags = *DamageEffectSpec.CapturedSourceTags.GetAggregatedTags();
+	Payload.TargetTags = *DamageEffectSpec.CapturedTargetTags.GetAggregatedTags();
+	Payload.EventMagnitude = DamageMagnitude;
+
+	AbilitySystemComponent->HandleGameplayEvent(Payload.EventTag, &Payload);
+}
+
+void ARFCharacter::DeathStart()
+{
+	if (DeathStatus != EDeathState::Alive)
+	{
+		return;
+	}
+
+	DeathStatus = EDeathState::DeathStarted;
+
+	StopMovementAfterDeath();
+
+	if (HasAuthority())
+	{
+		GetWorld()->GetTimerManager().SetTimer(RagDollTimer, [this]() {
+			RagDoll();
+			},
+			FMath::FRandRange(0.1f, 0.3f), false);
+	}
+	else
+	{
+		if (!CameraBlendHandle.IsValid())
+		{
+			GetWorld()->GetTimerManager().SetTimer(CameraBlendHandle, [this]() {
+				DeathCameraTransition();
+				}, GetWorld()->GetDeltaSeconds(), true);
+		}
+	}
+}
+
+void ARFCharacter::DeathFinish()
+{
+	if (DeathStatus != EDeathState::DeathStarted)
+	{
+		return;
+	}
+
+	DeathStatus = EDeathState::DeathFinished;
+	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, DeathStatus, this);
+
+	AbilitySystemComponent->CancelAbilities(nullptr, nullptr);
+	AbilitySystemComponent->RemoveAllGameplayCues();
+
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		DetachFromControllerPendingDestroy();
+		SetLifeSpan(0.1f);
+	}
+
+	SetActorHiddenInGame(true);
+}
+
+void ARFCharacter::StopMovementAfterDeath()
+{
+	if (Controller)
+	{
+		Controller->SetIgnoreMoveInput(true);
+	}
+
+	if (UCapsuleComponent* CapsuleComp = GetCapsuleComponent())
+	{
+		CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		CapsuleComp->SetCollisionResponseToAllChannels(ECR_Ignore);
+	}
+
+	UCharacterMovementComponent* CMC = GetCharacterMovement();
+	CMC->StopMovementImmediately();
+	CMC->DisableMovement();
+}
+
+void ARFCharacter::RagDoll_Implementation()
+{
+	GetMesh()->SetCollisionProfileName(FName("Ragdoll"));
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetAllBodiesBelowSimulatePhysics(FName("pelvis"), true, true);
+
+	//Drop Weapon
+	FVector ImpulseVelocity = GetCharacterMovement()->GetLastUpdateVelocity();
+	ImpulseVelocity.Normalize();
+	GetMesh()->AddImpulse(ImpulseVelocity * 500.f, FName("pelvis"), true);
+}
+
+void ARFCharacter::DeathCameraTransition()
+{
+	TransitionSeconds += GetWorld()->GetDeltaSeconds() * TransitionSpeed;
+	FVector NewLocation = FMath::Lerp(FirstPersonCameraComponent->GetComponentLocation(), DeathCameraComponent->GetComponentLocation(), TransitionSeconds);
+	FQuat NewQuat = FMath::Lerp(FirstPersonCameraComponent->GetComponentQuat(), DeathCameraComponent->GetComponentQuat(), TransitionSeconds);
+
+	FirstPersonCameraComponent->SetWorldTransform(FTransform(NewQuat, NewLocation));
+
+	if (TransitionSeconds >= 1.f)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(CameraBlendHandle);
+		CameraBlendHandle.Invalidate();
+		TransitionSeconds = 0.f;
+
+		TrasitionCameraOnDeath();
+		ChangeVisibilityOnDeath();
+	}
+}
+
+void ARFCharacter::TrasitionCameraOnDeath()
+{
+	FirstPersonCameraComponent->SetActive(false, false);
+	DeathCameraComponent->SetActive(true, false);
+}
+
+void ARFCharacter::ChangeVisibilityOnDeath()
+{
+	Mesh1P->SetVisibility(false, true);
+	Mesh_Leg->SetVisibility(false, true);
+
+	GetMesh()->SetOwnerNoSee(false);
+}
+
 void ARFCharacter::OnAimTransitionLocUpdate(FVector InLocation)
 {
 	if (Mesh1P)
@@ -550,6 +709,18 @@ void ARFCharacter::OnRep_IsAiming()
 	}
 }
 
+void ARFCharacter::OnRep_DeathStatus(EDeathState OldDeathStatus)
+{
+	if (OldDeathStatus == EDeathState::Alive)
+	{
+		DeathStart();
+	}
+	else if (OldDeathStatus == EDeathState::DeathStarted)
+	{
+		DeathFinish();
+	}
+}
+
 void ARFCharacter::ClientRegisterInputID_Implementation(int32 InputID, FGameplayTag InputTag)
 {
 	if (!AbilityInputID.Contains(InputTag))
@@ -569,4 +740,5 @@ void ARFCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, Mesh1P, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bHasWeapon, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bIsAiming, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, DeathStatus, SharedParams);
 }

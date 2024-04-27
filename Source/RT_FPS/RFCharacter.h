@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GameplayEffectTypes.h"
 #include "Interface/AbilityInputInterface.h"
 #include "Interface/RFMeshInterface.h"
 #include "AbilitySystemInterface.h"
@@ -15,7 +16,9 @@ class USkeletalMeshComponent;
 class UCameraComponent;
 class URFEquipmentComponent;
 class URFAbilitySystemComponent;
+class URFAttributeSet;
 class ARFPlayerState;
+class URFAbilitySet;
 class UProceduralAnimComponent;
 class URFWeaponInstance;
 
@@ -28,6 +31,16 @@ struct FInputActionValue;
 class UTimelineComponent;
 class UCurveVector;
 class UCurveFloat;
+
+struct FGameplayEffectSpec;
+
+UENUM(BlueprintType)
+enum class EDeathState : uint8
+{
+	Alive,
+	DeathStarted,
+	DeathFinished
+};
 
 UCLASS()
 class RT_FPS_API ARFCharacter : public ACharacter, public IAbilitySystemInterface, public IAbilityInputInterface, public IRFMeshInterface
@@ -42,7 +55,7 @@ public:
 protected:
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
-
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	// Client only
 	virtual void OnRep_PlayerState() override;
 
@@ -57,7 +70,6 @@ protected:
 
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
-
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
@@ -76,7 +88,6 @@ public:
 	//~Weapon
 	void EquipWeapon();
 	void UnEquipWeapon();
-
 	/** Setter to set the bool */
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	void SetHasWeapon(bool bNewHasWeapon);
@@ -95,6 +106,7 @@ public:
 	const TMap<FGameplayTag, URFAbilityInputAction*> GetAllAbilityInputMap() const;
 	//~End of WeaponAbility
 
+	//~Getter
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	URFAbilitySystemComponent* GetCachedAbilitySystemComponent() const;
 	ARFPlayerState* GetRFPlayerState() const;
@@ -107,11 +119,28 @@ public:
 	FORCEINLINE	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 	/* Returns Equipment subobject */
 	FORCEINLINE URFEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
+	//~End Getter
 
 	UFUNCTION(Reliable, Server)
 	void SetAiming(bool bInAiming);
 	UFUNCTION(BlueprintPure)
 	bool IsAiming() const { return bIsAiming; }
+
+	EDeathState GetDeathStatus() const { return DeathStatus; }
+	UFUNCTION(BlueprintPure, meta = (BlueprintThreadSafe))
+	bool IsDeathStart() const { return DeathStatus != EDeathState::Alive; }
+
+	void OnHealthChanged(const FOnAttributeChangeData& ChangeData);
+	void HandleOutOfHealth(AActor* DamageVictim, AActor* DamageCauser, const FGameplayEffectSpec& DamageEffectSpec, float DamageMagnitude);
+	void DeathStart();
+	void DeathFinish();
+
+	void StopMovementAfterDeath();
+	UFUNCTION(NetMulticast, Reliable)
+	void RagDoll();
+	void DeathCameraTransition();
+	void TrasitionCameraOnDeath();
+	void ChangeVisibilityOnDeath();
 
 private:
 	UFUNCTION()
@@ -121,6 +150,8 @@ private:
 
 	UFUNCTION()
 	void OnRep_IsAiming();
+	UFUNCTION()
+	void OnRep_DeathStatus(EDeathState OldDeathStatus);
 
 	UFUNCTION(Client, Reliable)
 	void ClientRegisterInputID(int32 InputID, FGameplayTag InputTag);
@@ -128,7 +159,9 @@ private:
 protected:
 	// Caching ASC
 	UPROPERTY()
-	TObjectPtr<URFAbilitySystemComponent> AbilitySystemComponent;
+	TWeakObjectPtr<URFAbilitySystemComponent> AbilitySystemComponent;
+	UPROPERTY()
+	TWeakObjectPtr<URFAttributeSet> HealthAttributeSet;
 
 private:
 	/** Bool for AnimBP to switch to another animation set */
@@ -153,6 +186,8 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	UCameraComponent* DeathCameraComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	USceneComponent* ProceduralMeshComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	float StandCameraLagSpeed;
@@ -161,23 +196,18 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<URFEquipmentComponent> EquipmentComponent;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UProceduralAnimComponent> ProceduralAnimComponent;
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* CrouchAction;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* AimAction;
-
 	UPROPERTY(VisibleAnywhere, Category = Input, meta = (AllowPrivateAccess = "true"))
 	TMap<FGameplayTag, int32> AbilityInputID;
 
@@ -188,4 +218,13 @@ private:
 	UCurveVector* AimLocationCurve;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Aim|Timeline", meta = (AllowPrivateAccess = "true"))
 	UCurveVector* AimRotationCurve;
+
+	FTimerHandle RagDollTimer;
+	UPROPERTY(ReplicatedUsing = OnRep_DeathStatus)
+	EDeathState DeathStatus;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera|Transition", meta = (AllowPrivateAccess = "true"))
+	float TransitionSeconds = 0.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Camera|Transition", meta = (AllowPrivateAccess = "true"))
+	float TransitionSpeed = 2.f;
+	FTimerHandle CameraBlendHandle;
 };

@@ -10,6 +10,7 @@
 
 class URFPlayerData;
 class URFAbilitySystemComponent;
+class URFAttributeSet;
 
 /**
  *
@@ -27,6 +28,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "AbilitySystemComponent")
 	URFAbilitySystemComponent* GetRFAbilitySystemComponent() const { return AbilitySystemComponent; }
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	URFAttributeSet* GetAttributeSet() const;
 
 	//~ILyraTeamAgentInterface interface
 	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override;
@@ -36,6 +38,7 @@ public:
 public:
 	const URFPlayerData* GetPlayerData() const { return PlayerData; }
 	void SetPlayerData(const URFPlayerData* InPawnData);
+	void GiveDefaultAbilities();
 
 private:
 	UFUNCTION()
@@ -49,6 +52,8 @@ private:
 	// Ability system component that player has.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AbilitySystemComponent", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<URFAbilitySystemComponent> AbilitySystemComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AbilitySystemComponent", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<URFAttributeSet> HealthAttributeSet;
 
 	UPROPERTY(ReplicatedUsing = OnRep_PlayerTeamID)
 	FGenericTeamId PlayerTeamID;
