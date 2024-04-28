@@ -185,5 +185,12 @@ FRotator UProceduralAnimComponent::UpdateLookSway()
 
 float UProceduralAnimComponent::ClampLookSway(float LookSwayValue)
 {
-	return LookSwayValue > LookSwayRotCap ? LookSwayRotCap : LookSwayValue < -LookSwayRotCap ? -LookSwayRotCap : LookSwayValue;
+	if (LookSwayRotCap < 0)
+	{
+		return LookSwayValue > -LookSwayRotCap ? LookSwayRotCap : LookSwayValue < LookSwayRotCap ? -LookSwayRotCap : LookSwayValue;
+	}
+	else
+	{
+		return LookSwayValue > LookSwayRotCap ? LookSwayRotCap : LookSwayValue < -LookSwayRotCap ? -LookSwayRotCap : LookSwayValue;
+	}
 }
