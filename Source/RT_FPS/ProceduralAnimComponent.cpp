@@ -51,13 +51,13 @@ void UProceduralAnimComponent::UpdateProceduralMovement()
 	ResultRotation = TargetMoveRotation;
 
 	// Apply MoveSway on ResultRotation
-	ResultRotation.Roll = FMath::Lerp(ResultRotation.Roll, MoveSwayZRotation, 0.5f);
+	ResultRotation.Roll = FMath::Lerp(ResultRotation.Roll, MoveSwayZRotation, 0.4f);
 	// Apply LookSway on ResultRotation
-	ResultRotation.Pitch = FMath::Lerp(ResultRotation.Pitch, LookSwayRotation.Pitch, 0.5f);
-	ResultRotation.Yaw = FMath::Lerp(ResultRotation.Yaw, LookSwayRotation.Yaw, 0.5f);
+	ResultRotation.Pitch = FMath::Lerp(ResultRotation.Pitch, LookSwayRotation.Pitch, 0.4f);
+	ResultRotation.Yaw = FMath::Lerp(ResultRotation.Yaw, LookSwayRotation.Yaw, 0.4f);
 
 	ProceduralRootComponent->SetRelativeLocation(ResultLocation);
-	ProceduralRootComponent->SetRelativeRotation(ResultRotation);
+	ProceduralRootComponent->SetRelativeRotation(FQuat(ResultRotation));
 }
 
 void UProceduralAnimComponent::UpdateWalkingMovement(FVector& OutTargetLocation, FRotator& OutTargetRotation)
@@ -173,8 +173,8 @@ FRotator UProceduralAnimComponent::UpdateLookSway()
 	const FVector2D InputValue = MoveActionBinding->GetValue().Get<FVector2D>();
 	
 	const FRotator TargetRotation = FRotator(
-		ClampLookSway(-InputValue.Y * LookSwayScale),
-		ClampLookSway(InputValue.X * LookSwayScale),
+		ClampLookSway(-InputValue.Y * LookSwayPitchScale),
+		ClampLookSway(InputValue.X * LookSwayYawScale),
 		0
 	);
 

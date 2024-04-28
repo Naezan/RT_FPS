@@ -99,7 +99,9 @@ private:
 		float LookSwaySpeed = 6.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Anim|Look Sway", meta = (AllowPrivateAccess = "true"))
-		float LookSwayScale = 3.f;
+		float LookSwayYawScale = 3.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Anim|Look Sway", meta = (AllowPrivateAccess = "true"))
+		float LookSwayPitchScale = 3.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Procedural Anim|Look Sway", meta = (AllowPrivateAccess = "true"))
 		float LookSwayRotCap = 3.f;

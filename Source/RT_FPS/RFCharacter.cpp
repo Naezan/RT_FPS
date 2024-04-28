@@ -41,15 +41,26 @@ ARFCharacter::ARFCharacter()
 	FirstPersonSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComponent"));
 	FirstPersonSpringArmComponent->SetupAttachment(GetCapsuleComponent());
 	FirstPersonSpringArmComponent->SetRelativeLocation(FVector(40.f, 0.f, 70.f));
-	FirstPersonSpringArmComponent->TargetArmLength = 5.0f;
+	FirstPersonSpringArmComponent->TargetArmLength = 5.f;
 	FirstPersonSpringArmComponent->bDoCollisionTest = false;
-	FirstPersonSpringArmComponent->bUsePawnControlRotation = false;
-	FirstPersonSpringArmComponent->bEnableCameraLag = true;
-	FirstPersonSpringArmComponent->CameraLagSpeed = 30.f;
+	FirstPersonSpringArmComponent->bUsePawnControlRotation = true;
+	//FirstPersonSpringArmComponent->bEnableCameraLag = false;
+	//FirstPersonSpringArmComponent->CameraLagSpeed = 30.f;
+	FirstPersonSpringArmComponent->bEnableCameraRotationLag = true;
+	FirstPersonSpringArmComponent->CameraRotationLagSpeed = 40.f;
+
+	CameraSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraSpringArmComponent"));
+	CameraSpringArmComponent->SetupAttachment(GetCapsuleComponent());
+	CameraSpringArmComponent->SetRelativeLocation(FVector(40.f, 0.f, 70.f));
+	CameraSpringArmComponent->TargetArmLength = 5.f;
+	CameraSpringArmComponent->bDoCollisionTest = false;
+	CameraSpringArmComponent->bUsePawnControlRotation = false;
+	CameraSpringArmComponent->bEnableCameraRotationLag = true;
+	CameraSpringArmComponent->CameraRotationLagSpeed = 5.f;
 
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCameraComponent->SetupAttachment(FirstPersonSpringArmComponent);
+	FirstPersonCameraComponent->SetupAttachment(CameraSpringArmComponent);
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 	FirstPersonCameraComponent->FieldOfView = 110.f;
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
@@ -60,7 +71,7 @@ ARFCharacter::ARFCharacter()
 	DeathCameraComponent->FieldOfView = 110.f;
 
 	ProceduralMeshComponent = CreateDefaultSubobject<USceneComponent>(TEXT("ProceduralMeshComponent"));
-	ProceduralMeshComponent->SetupAttachment(FirstPersonCameraComponent);
+	ProceduralMeshComponent->SetupAttachment(FirstPersonSpringArmComponent);
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
