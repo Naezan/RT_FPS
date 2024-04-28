@@ -61,16 +61,30 @@ void URFWeaponInstance::UnEquipWeapon()
 {
 	RemoveWeaponAbility();
 
-	if (WeaponClass && GetPawn() && GetPawn()->HasAuthority())
+	if (GetPawn() && GetPawn()->HasAuthority())
 	{
-		AActor* DetachedWeapon = GetWorld()->SpawnActorDeferred<AActor>(WeaponClass, TPEquippedWeapon->GetActorTransform(), nullptr);
-		// Activate Simulate Physics
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+		// If have a mag, spawn combination with mag.
+		if (TPWeaponMag->GetAttachParentActor() == TPEquippedWeapon && UnEquipWeaponWithMagClass)
+		{
+			GetWorld()->SpawnActor<AActor>(UnEquipWeaponWithMagClass, TPWeaponMag->GetActorTransform(), SpawnParams);
+		}
+		// If not have a mag, spawn separately.
+		else if(UnEquipWeaponClass && UnEquipWeaponMagClass)
+		{
+			GetWorld()->SpawnActor<AActor>(UnEquipWeaponClass, TPEquippedWeapon->GetActorTransform(), SpawnParams);
+			GetWorld()->SpawnActor<AActor>(UnEquipWeaponMagClass, TPEquippedWeapon->GetActorTransform(), SpawnParams);
+		}
 	}
 
 	FPEquippedWeapon->Destroy();
 	TPEquippedWeapon->Destroy();
 	FPEquippedWeapon = nullptr;
 	TPEquippedWeapon = nullptr;
+	FPWeaponMag->Destroy();
+	TPWeaponMag->Destroy();
 	FPWeaponMag = nullptr;
 	TPWeaponMag = nullptr;
 }

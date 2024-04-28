@@ -154,10 +154,11 @@ void ARFCharacter::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	AbilitySystemComponent = GetCachedAbilitySystemComponent();
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(URFAttributeSet::GetHealthAttribute()).AddUObject(this, &ThisClass::OnHealthChanged);
 
 	if (AbilitySystemComponent != nullptr)
 	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(URFAttributeSet::GetHealthAttribute()).AddUObject(this, &ThisClass::OnHealthChanged);
+
 		if (ARFPlayerState* PS = GetRFPlayerState())
 		{
 			AbilitySystemComponent->InitAbilityActorInfo(PS, this);
@@ -182,10 +183,11 @@ void ARFCharacter::OnRep_PlayerState()
 	Super::OnRep_PlayerState();
 
 	AbilitySystemComponent = GetCachedAbilitySystemComponent();
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(URFAttributeSet::GetHealthAttribute()).AddUObject(this, &ThisClass::OnHealthChanged);
 
 	if (AbilitySystemComponent != nullptr)
 	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(URFAttributeSet::GetHealthAttribute()).AddUObject(this, &ThisClass::OnHealthChanged);
+
 		if (ARFPlayerState* PS = GetRFPlayerState())
 		{
 			AbilitySystemComponent->InitAbilityActorInfo(PS, this);
@@ -573,6 +575,7 @@ void ARFCharacter::DeathStart()
 	{
 		GetWorld()->GetTimerManager().SetTimer(RagDollTimer, [this]() {
 			RagDoll();
+			UnEquipWeapon();
 			},
 			FMath::FRandRange(0.1f, 0.3f), false);
 	}

@@ -137,6 +137,13 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData|Mag", meta = (AllowPrivateAccess = "true"))
 	FGameplayTag MagazineTag;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UnEquipData", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<AActor> UnEquipWeaponClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UnEquipData", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<AActor> UnEquipWeaponWithMagClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UnEquipData", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<AActor> UnEquipWeaponMagClass;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimData", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<UAnimInstance> UpperAnimInstance;
 
