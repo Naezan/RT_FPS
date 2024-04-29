@@ -229,7 +229,7 @@ void ARFCharacter::InitializeMovement()
 		MovementComponent->SetCrouchedHalfHeight(60.f);
 		MovementComponent->MaxWalkSpeed = 300.f;
 		MovementComponent->MaxWalkSpeedCrouched = 200.f;
-		StandCameraLagSpeed = FirstPersonSpringArmComponent->CameraLagSpeed;
+		StandCameraLagSpeed = CameraSpringArmComponent->CameraLagSpeed;
 
 		// Caching default speed for ADS
 		DefaultWalkSpeed = MovementComponent->MaxWalkSpeed;
@@ -351,14 +351,16 @@ void ARFCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightA
 {
 	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 
-	FirstPersonSpringArmComponent->CameraLagSpeed = CrouchTransitionCameraLagSpeed;
+	//CameraSpringArmComponent->bEnableCameraLag = true;
+	//CameraSpringArmComponent->CameraLagSpeed = CrouchTransitionCameraLagSpeed;
 }
 
 void ARFCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 
-	FirstPersonSpringArmComponent->CameraLagSpeed = StandCameraLagSpeed;
+	//CameraSpringArmComponent->bEnableCameraLag = false;
+	//CameraSpringArmComponent->CameraLagSpeed = StandCameraLagSpeed;
 }
 
 void ARFCharacter::SwitchAimingTrasition(const FInputActionValue& Value)

@@ -64,6 +64,13 @@ void URFAnimInstance::UpdateTurnInPlaceData()
 
 	// Update YawOffset
 	YawOffset = Delta.Yaw;
+
+	FRotator DeltaAO = OwningCharacter->GetControlRotation() - OwningCharacter->GetActorRotation();
+	DeltaAO.Normalize();
+
+	FRotator InterpAO = FMath::RInterpTo(OwningCharacter->GetControlRotation(), DeltaAO, GetWorld()->GetDeltaSeconds(), 3.f);
+	YawAO = FMath::Clamp(InterpAO.Yaw, -90.f, 90.f);
+	PitchAO = FMath::Clamp(InterpAO.Pitch, -90.f, 90.f);
 }
 
 void URFAnimInstance::UpdateMovementStateData()

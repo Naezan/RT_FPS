@@ -145,7 +145,9 @@ private:
 	TSubclassOf<AActor> UnEquipWeaponMagClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimData", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<UAnimInstance> UpperAnimInstance;
+	TSubclassOf<UAnimInstance> FPUpperAnimInstance;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AnimData", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UAnimInstance> TPUpperAnimInstance;
 
 private:
 	UFUNCTION()

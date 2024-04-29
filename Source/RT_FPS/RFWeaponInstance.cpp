@@ -29,16 +29,19 @@ void URFWeaponInstance::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 void URFWeaponInstance::InitializeWeaponAnimInstance()
 {
-	if(UpperAnimInstance != nullptr)
+	if(FPUpperAnimInstance != nullptr)
 	{
 		if (USkeletalMeshComponent* FPMesh = GetCharacterFPMesh())
 		{
-			FPMesh->LinkAnimClassLayers(UpperAnimInstance);
+			FPMesh->LinkAnimClassLayers(FPUpperAnimInstance);
 		}
+	}
 
+	if (TPUpperAnimInstance != nullptr)
+	{
 		if (USkeletalMeshComponent* TPMesh = GetCharacterTPMesh())
 		{
-			TPMesh->LinkAnimClassLayers(UpperAnimInstance);
+			TPMesh->LinkAnimClassLayers(TPUpperAnimInstance);
 		}
 	}
 }
