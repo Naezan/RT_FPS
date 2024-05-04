@@ -20,11 +20,11 @@ jobs:
 
     - name: Setup Unreal Engine Environment
       run: |
-        set UE_ROOT="C:\UE_5.3"
-        set ProjectPath="%GITHUB_WORKSPACE%\RT_FPS\RT_FPS.uproject"
-        set EngineBuildBatchFile="%UE_ROOT%\Engine\Build\BatchFiles\Build.bat"
+        $env:UE_ROOT="C:\UE_5.3"
+        $env:ProjectPath="${{ github.workspace }}\RT_FPS\RT_FPS.uproject"
+        $env:EngineBuildBatchFile="$env:UE_ROOT\Engine\Build\BatchFiles\Build.bat"
 
     - name: Compile Unreal Engine Project
-      shell: cmd
+      shell: pwsh
       run: |
-        "%EngineBuildBatchFile%" RT_FPS Win64 Development "%ProjectPath%" -waitmutex
+        & $env:EngineBuildBatchFile RT_FPS Win64 Development $env:ProjectPath -waitmutex
