@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: CheckOut repository
         uses: actions/checkout@v4
+        with:
+          submodules: true
 
       - name: Fetch dependencies
         run: .\Scripts\FetchDependencies.ps1
