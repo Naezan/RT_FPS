@@ -36,5 +36,9 @@ jobs:
       - name: Setup Engine
         run: .\Scripts\SetupEngine.ps1
 
+      - name: Building UnrealBuildTools
+        run: |
+          .\Scripts\BuildUBT.bat
+
       - name: Compile Unreal Engine Project
         run: .\Scripts\Build.ps1
