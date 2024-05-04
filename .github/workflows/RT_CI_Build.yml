@@ -20,9 +20,9 @@ jobs:
 
     - name: Setup Unreal Engine Environment
       run: |
-        export UE_ROOT="C:\\UE_5.3"
-        export ProjectPath="${{ github.workspace }}\\RT_FPS\\RT_FPS.uproject"
-        export EngineBuildBatchFile="$UE_ROOT\\Engine\\Build\\BatchFiles\\Build.bat"
+        set UE_ROOT="C:\UE_5.3"
+        set ProjectPath="%GITHUB_WORKSPACE%\RT_FPS\RT_FPS.uproject"
+        set EngineBuildBatchFile="%UE_ROOT%\Engine\Build\BatchFiles\Build.bat"
 
     - name: Compile Unreal Engine Project
       shell: cmd
