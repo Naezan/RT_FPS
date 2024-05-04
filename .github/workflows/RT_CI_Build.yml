@@ -18,15 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4 # 리포지토리를 체크아웃합니다.
 
-      - name: Setup Unreal Engine Environment
-        shell: pwsh
-        run: |
-          $env:UE_ROOT="C:\UE_5.3"
-          $env:ProjectPath="${{ github.workspace }}\RT_FPS\RT_FPS.uproject"
-          $env:EngineBuildBatchFile="$env:UE_ROOT\Engine\Build\BatchFiles\Build.bat"
-
       - name: Compile Unreal Engine Project
         shell: pwsh
         run: |
+          $env:ProjectPath="${{ github.workspace }}\RT_FPS\RT_FPS.uproject"
+          $env:EngineBuildBatchFile="C:\UE_5.3\Engine\Build\BatchFiles\Build.bat"
+          
           $command = "& `"$env:EngineBuildBatchFile`" RT_FPSEditor Win64 Development `"$env:ProjectPath`" -waitmutex -NoHotReload"
-          Invoke-Expression -Command $command
+          Invoke-Expression $command
