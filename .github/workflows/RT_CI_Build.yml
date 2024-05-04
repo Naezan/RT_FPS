@@ -29,6 +29,10 @@ jobs:
         with:
           msbuild-architecture: x64
 
+      - name: Initialize submodules
+        run: |
+          .\Scripts\Setup.bat
+
       - name: Setup Engine
         run: .\Scripts\SetupEngine.ps1
 
