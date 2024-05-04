@@ -20,10 +20,10 @@ jobs:
 
     - name: Setup Unreal Engine Environment
       run: |
-        $env:UE_ROOT = "C:\UE_5.3" # Unreal Engine 설치 경로
-        $env:ProjectPath = "${{ github.workspace }}\RT_FPS\RT_FPS.uproject"
-        $env:EngineBuildBatchFile = "$env:UE_ROOT\Engine\Build\BatchFiles\Build.bat"
+        export UE_ROOT="C:\\UE_5.3"
+        export ProjectPath="${{ github.workspace }}\\RT_FPS\\RT_FPS.uproject"
+        export EngineBuildBatchFile="$UE_ROOT\\Engine\\Build\\BatchFiles\\Build.bat"
 
     - name: Compile Unreal Engine Project
-      run: |
-        & "$env:EngineBuildBatchFile" YourProjectNameEditor Win64 Development "$env:ProjectPath" -waitmutex
+      shell: cmd
+      run: '"%EngineBuildBatchFile%" YourProjectNameEditor Win64 Development "%ProjectPath%" -waitmutex'
