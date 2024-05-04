@@ -27,4 +27,4 @@ jobs:
     - name: Compile Unreal Engine Project
       shell: cmd
       run: |
-        "%EngineBuildBatchFile%" YourProjectNameEditor Win64 Development "%ProjectPath%" -waitmutex
+        "%EngineBuildBatchFile%" RT_FPS Win64 Development "%ProjectPath%" -waitmutex
