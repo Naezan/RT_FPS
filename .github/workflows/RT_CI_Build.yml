@@ -1,0 +1,29 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: RT-CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest # Windows 러너를 사용합니다.
+
+    steps:
+    - uses: actions/checkout@v4 # 리포지토리를 체크아웃합니다.
+
+    - name: Setup Unreal Engine Environment
+      run: |
+        $env:UE_ROOT = "C:\UE_5.3" # Unreal Engine 설치 경로
+        $env:ProjectPath = "${{ github.workspace }}\RT_FPS\RT_FPS.uproject"
+        $env:EngineBuildBatchFile = "$env:UE_ROOT\Engine\Build\BatchFiles\Build.bat"
+
+    - name: Compile Unreal Engine Project
+      run: |
+        & "$env:EngineBuildBatchFile" YourProjectNameEditor Win64 Development "$env:ProjectPath" -waitmutex
