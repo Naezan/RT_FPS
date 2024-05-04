@@ -16,15 +16,16 @@ jobs:
     runs-on: windows-latest # Windows 러너를 사용합니다.
 
     steps:
-    - uses: actions/checkout@v4 # 리포지토리를 체크아웃합니다.
+      - uses: actions/checkout@v4 # 리포지토리를 체크아웃합니다.
 
-    - name: Setup Unreal Engine Environment
-      run: |
-        $env:UE_ROOT="C:\UE_5.3"
-        $env:ProjectPath="${{ github.workspace }}\RT_FPS\RT_FPS.uproject"
-        $env:EngineBuildBatchFile="$env:UE_ROOT\Engine\Build\BatchFiles\Build.bat"
+      - name: Setup Unreal Engine Environment
+        shell: pwsh
+        run: |
+          $env:UE_ROOT="C:\UE_5.3"
+          $env:ProjectPath="${{ github.workspace }}\RT_FPS\RT_FPS.uproject"
+          $env:EngineBuildBatchFile="$env:UE_ROOT\Engine\Build\BatchFiles\Build.bat"
 
-    - name: Compile Unreal Engine Project
-      shell: pwsh
-      run: |
-        & $env:EngineBuildBatchFile RT_FPS Win64 Development $env:ProjectPath -waitmutex
+      - name: Compile Unreal Engine Project
+        shell: pwsh
+        run: |
+          & "$env:EngineBuildBatchFile" RT_FPSEditor Win64 Development "$env:ProjectPath" -waitmutex -NoHotReload
