@@ -24,5 +24,8 @@ jobs:
           submodules: true
           token: ${{ secrets.ACTION_TOKEN }}
 
+      - name: Fetch dependencies
+        run: .\Scripts\FetchDependencies.ps1
+
       - name: Compile Unreal Engine Project
         run: .\Scripts\Build.ps1
