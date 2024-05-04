@@ -6,6 +6,7 @@
 name: RT-CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
   pull_request:
@@ -13,11 +14,18 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest # Windows 러너를 사용합니다.
+    runs-on: engine_build_agent
 
     steps:
-      - uses: actions/checkout@v4 # 리포지토리를 체크아웃합니다.
+      - name: CheckOut repository
+      - uses: actions/checkout@v4
+        with:
+            clean: false
+            submodules: 'recursive'
+            token: ${{ secrets.ENGINE_GITHUB_PAT }}
+
+      - name: Fetch dependencies
+        run: cd UnrealEngine; .\Engine\Binaries\DotNET\GitDependencies\win-x64\GitDependencies.exe --force
 
       - name: Compile Unreal Engine Project
-        shell: pwsh
         run: .\Scripts\Build.ps1
