@@ -28,4 +28,5 @@ jobs:
       - name: Compile Unreal Engine Project
         shell: pwsh
         run: |
-          & "$env:EngineBuildBatchFile" RT_FPSEditor Win64 Development "$env:ProjectPath" -waitmutex -NoHotReload
+          $command = "& `"$env:EngineBuildBatchFile`" RT_FPSEditor Win64 Development `"$env:ProjectPath`" -waitmutex -NoHotReload"
+          Invoke-Expression -Command $command
