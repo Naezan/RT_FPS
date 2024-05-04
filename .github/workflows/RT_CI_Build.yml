@@ -23,6 +23,8 @@ jobs:
         with:
           submodules: true
           token: ${{ secrets.ACTION_TOKEN }}
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
 
       - name: Fetch dependencies
         run: .\Scripts\FetchDependencies.ps1
