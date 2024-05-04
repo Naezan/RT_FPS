@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Fetch dependencies
-        run: cd UnrealEngine; .\Engine\Binaries\DotNET\GitDependencies\win-x64\GitDependencies.exe --force
+        run: .\Scripts\FetchDependencies.ps1
 
       - name: Compile Unreal Engine Project
         run: .\Scripts\Build.ps1
