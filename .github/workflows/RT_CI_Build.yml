@@ -23,11 +23,17 @@ jobs:
         with:
           submodules: true
           token: ${{ secrets.ACTION_TOKEN }}
+          
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
 
-      #- name: Fetch dependencies
-      #  run: .\Scripts\FetchDependencies.ps1
+      - name: Setup Engine
+        run: .\Scripts\UnrealEngine\Setup.bat
+
+      - name: Generate EngineFiles
+        run: .\Scripts\UnrealEngine\GenerateProjectFiles.bat
 
       - name: Compile Unreal Engine Project
         run: .\Scripts\Build.ps1
