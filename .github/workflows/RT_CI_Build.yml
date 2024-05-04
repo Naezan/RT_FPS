@@ -24,7 +24,7 @@ jobs:
           submodules: true
           token: ${{ secrets.ACTION_TOKEN }}
 
-      - name: Add MSBuild to PATH
+      - name: Set msbuild
         uses: microsoft/setup-msbuild@v2
         with:
           msbuild-architecture: x64
