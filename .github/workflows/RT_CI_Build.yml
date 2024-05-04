@@ -14,15 +14,12 @@ on:
 
 jobs:
   build:
-    runs-on: engine_build_agent
+    name: Build-Win64
+    runs-on: windows-latest
 
     steps:
       - name: CheckOut repository
         uses: actions/checkout@v4
-        with:
-            clean: false
-            submodules: 'recursive'
-            token: ${{ secrets.ENGINE_GITHUB_PAT }}
 
       - name: Fetch dependencies
         run: cd UnrealEngine; .\Engine\Binaries\DotNET\GitDependencies\win-x64\GitDependencies.exe --force
