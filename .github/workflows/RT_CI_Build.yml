@@ -26,8 +26,8 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: Fetch dependencies
-        run: .\Scripts\FetchDependencies.ps1
+      #- name: Fetch dependencies
+      #  run: .\Scripts\FetchDependencies.ps1
 
       - name: Compile Unreal Engine Project
         run: .\Scripts\Build.ps1
