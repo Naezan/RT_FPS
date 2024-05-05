@@ -1,5 +1,4 @@
 @echo off
-pushd "%~dp0"
 
 rem Building UnrealBuildTools
 dotnet msbuild /restore /target:build /property:Configuration=Development ..\UnrealEngine\Engine\Source\Programs\UnrealBuildTool\UnrealBuildTool.csproj
@@ -9,5 +8,3 @@ D:\a\RT_FPS\RT_FPS\UnrealEngine\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBui
 
 rem Building Project
 dotnet msbuild "D:\a\RT_FPS\RT_FPS\RT_FPS.sln" /target:build /property:Configuration="Development Editor" /property:Platform=Win64 /verbosity:diagnostic
-
-popd

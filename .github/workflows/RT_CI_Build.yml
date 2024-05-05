@@ -30,15 +30,13 @@ jobs:
           msbuild-architecture: x64
 
       - name: Initialize submodules
-        run: |
-          .\Scripts\InitModule.bat
+        run: .\Scripts\InitModule.bat
 
       - name: Setup Engine
-        run: .\Scripts\SetupEngine.ps1
+        run: .\Scripts\SetupEngine.bat
 
       - name: Build Project
-        run: |
-          .\Scripts\Build.bat
+        run: .\Scripts\Build.bat
 
-      - name: Package Project
-        run: .\Scripts\Package.ps1
+      #- name: Package Project
+      #  run: .\Scripts\Package.ps1
