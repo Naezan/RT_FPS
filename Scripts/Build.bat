@@ -1,5 +1,8 @@
 @echo off
 
+rem Set VCTargetsPath
+SET VCTargetsPath C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\
+
 rem Building UnrealBuildTools
 dotnet msbuild "D:\a\RT_FPS\RT_FPS\UnrealEngine\Engine\Source\Programs\UnrealBuildTool\UnrealBuildTool.sln" /t:Restore /target:build /property:Configuration="Development"
 
