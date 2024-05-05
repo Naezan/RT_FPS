@@ -31,14 +31,14 @@ jobs:
 
       - name: Initialize submodules
         run: |
-          .\Scripts\Setup.bat
+          .\Scripts\InitModule.bat
 
       - name: Setup Engine
         run: .\Scripts\SetupEngine.ps1
 
-      - name: Building UnrealBuildTools
+      - name: Build Project
         run: |
-          .\Scripts\BuildUBT.bat
+          .\Scripts\Build.bat
 
-      - name: Compile Unreal Engine Project
-        run: .\Scripts\Build.ps1
+      - name: Package Project
+        run: .\Scripts\Package.ps1
