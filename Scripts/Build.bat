@@ -1,7 +1,7 @@
 @echo off
 
 rem Building UnrealBuildTools
-dotnet msbuild /restore /target:build /property:Configuration=Development ..\UnrealEngine\Engine\Source\Programs\UnrealBuildTool\UnrealBuildTool.csproj
+dotnet msbuild "D:\a\RT_FPS\RT_FPS\UnrealEngine\Engine\Source\Programs\UnrealBuildTool\UnrealBuildTool.sln" /restore /target:build /property:Configuration="Development"
 
 rem Execute BuildTool
 D:\a\RT_FPS\RT_FPS\UnrealEngine\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.exe -projectfiles -project="D:\a\RT_FPS\RT_FPS\RT_FPS.uproject" -game -rocket -progress
