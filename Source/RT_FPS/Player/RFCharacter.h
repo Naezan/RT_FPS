@@ -72,6 +72,8 @@ protected:
 	void Move(const FInputActionValue& Value);
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+	UFUNCTION(Unreliable, Server)
+	void UpdateTurnInPlaceData();
 
 	void SwitchCrouch(const FInputActionValue& Value);
 	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
@@ -120,6 +122,9 @@ public:
 	/* Returns Equipment subobject */
 	FORCEINLINE URFEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
 	//~End Getter
+
+	virtual float GetYawAO() const override { return YawAO; }
+	virtual float GetPitchAO() const override { return PitchAO; }
 
 	UFUNCTION(Reliable, Server)
 	void SetAiming(bool bInAiming);
@@ -173,6 +178,10 @@ private:
 	float DefaultWalkSpeed;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Aim", meta = (AllowPrivateAccess = "true"))
 	float AimWalkSpeed;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	float YawAO;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	float PitchAO;
 
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))

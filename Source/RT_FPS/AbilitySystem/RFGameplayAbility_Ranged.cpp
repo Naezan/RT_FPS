@@ -4,8 +4,8 @@
 #include "AbilitySystem/RFGameplayAbility_Ranged.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbilityTargetTypes.h"
-#include "RFWeaponInstance.h"
-#include "RFEquipmentComponent.h"
+#include "Weapon/RFWeaponInstance.h"
+#include "Player/Component/RFEquipmentComponent.h"
 #include "RFLogMacros.h"
 #include "Collision/RFCollisionChannel.h"
 
@@ -41,7 +41,7 @@ void URFGameplayAbility_Ranged::ActivateAbility(const FGameplayAbilitySpecHandle
 	UAbilitySystemComponent* MyAbilityComponent = CurrentActorInfo->AbilitySystemComponent.Get();
 	check(MyAbilityComponent);
 
-	MyAbilityComponent->AbilityTargetDataSetDelegate(CurrentSpecHandle, CurrentActivationInfo.GetActivationPredictionKey()).AddUObject(this, &ThisClass::OnTargetDataReadyCallback);
+	//MyAbilityComponent->AbilityTargetDataSetDelegate(CurrentSpecHandle, CurrentActivationInfo.GetActivationPredictionKey()).AddUObject(this, &ThisClass::OnTargetDataReadyCallback);
 
 	ClientTargetTrace();
 }
@@ -153,10 +153,10 @@ void URFGameplayAbility_Ranged::OnTargetDataReadyCallback(const FGameplayAbility
 	FScopedPredictionWindow	ScopedPrediction(MyAbilityComponent);
 
 	// Only Client
-	if (IsPredictingClient())
+	/*if (IsPredictingClient())
 	{
 		MyAbilityComponent->CallServerSetReplicatedTargetData(CurrentSpecHandle, CurrentActivationInfo.GetActivationPredictionKey(), InData, ApplicationTag, MyAbilityComponent->ScopedPredictionKey);
-	}
+	}*/
 
 	// Server Call
 	ProcecssTargetData(InData);

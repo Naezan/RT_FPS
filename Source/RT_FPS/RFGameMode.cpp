@@ -2,9 +2,9 @@
 
 
 #include "RFGameMode.h"
-#include "RFPlayerState.h"
+#include "Player/RFPlayerState.h"
 #include "RFGameState.h"
-#include "RFPlayerData.h"
+#include "Player/RFPlayerData.h"
 #include "RFLogMacros.h"
 
 ARFGameMode::ARFGameMode()

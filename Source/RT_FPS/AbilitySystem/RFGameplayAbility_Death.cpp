@@ -3,7 +3,7 @@
 
 #include "AbilitySystem/RFGameplayAbility_Death.h"
 #include "AbilitySystemComponent.h"
-#include "RFCharacter.h"
+#include "Player/RFCharacter.h"
 
 URFGameplayAbility_Death::URFGameplayAbility_Death(const FObjectInitializer& ObjectInitializer)
 {

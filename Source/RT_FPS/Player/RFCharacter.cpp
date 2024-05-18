@@ -2,7 +2,7 @@
 
 
 #include "RFCharacter.h"
-#include "RFWeaponInstance.h"
+#include "Weapon/RFWeaponInstance.h"
 #include "RFPlayerState.h"
 #include "RFPlayerData.h"
 #include "RFLogMacros.h"
@@ -21,8 +21,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "RFEquipmentComponent.h"
-#include "ProceduralAnimComponent.h"
+#include "Component/RFEquipmentComponent.h"
+#include "Component/ProceduralAnimComponent.h"
 #include "Interface/GameStateGlobalDelegateInterface.h"
 #include "Components/TimelineComponent.h"
 
@@ -332,7 +332,19 @@ void ARFCharacter::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+
+		UpdateTurnInPlaceData();
 	}
+}
+
+void ARFCharacter::UpdateTurnInPlaceData_Implementation()
+{
+	FRotator DeltaAO = GetControlRotation() - GetActorRotation();
+	DeltaAO.Normalize();
+
+	FRotator InterpAO = FMath::RInterpTo(GetControlRotation(), DeltaAO, GetWorld()->GetDeltaSeconds(), 3.f);
+	YawAO = FMath::Clamp(InterpAO.Yaw, -90.f, 90.f);
+	PitchAO = FMath::Clamp(InterpAO.Pitch, -90.f, 90.f);
 }
 
 void ARFCharacter::SwitchCrouch(const FInputActionValue& Value)
@@ -757,4 +769,6 @@ void ARFCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bHasWeapon, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bIsAiming, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, DeathStatus, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, YawAO, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, PitchAO, SharedParams);
 }

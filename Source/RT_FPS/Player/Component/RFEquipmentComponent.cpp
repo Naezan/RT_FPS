@@ -2,7 +2,7 @@
 
 
 #include "RFEquipmentComponent.h"
-#include "RFWeaponInstance.h"
+#include "Weapon/RFWeaponInstance.h"
 #include "RFLogMacros.h"
 #include "Engine/ActorChannel.h"
 #include "GameFramework/Character.h"
