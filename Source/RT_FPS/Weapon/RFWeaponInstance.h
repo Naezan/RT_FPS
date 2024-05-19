@@ -127,6 +127,8 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData", meta = (AllowPrivateAccess = "true"))
 	FName WeaponAttachSocketName;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData", meta = (AllowPrivateAccess = "true"))
+	FName TPWeaponAttachSocketName;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData", meta = (AllowPrivateAccess = "true"))
 	FName MuzzleSocketName;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EquipData|Mag", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<ARFMagazineBase> WeaponMagazineClass;

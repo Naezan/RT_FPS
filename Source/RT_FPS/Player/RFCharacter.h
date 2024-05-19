@@ -125,6 +125,9 @@ public:
 
 	virtual float GetYawAO() const override { return YawAO; }
 	virtual float GetPitchAO() const override { return PitchAO; }
+	virtual float GetRotateYaw() const override { return RotateYaw; }
+	virtual bool IsTurnRight() const override { return bIsTurnRight; }
+	virtual bool IsTurnLeft() const override { return bIsTurnLeft; }
 
 	UFUNCTION(Reliable, Server)
 	void SetAiming(bool bInAiming);
@@ -182,6 +185,12 @@ private:
 	float YawAO;
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	float PitchAO;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	float RotateYaw;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsTurnRight : 1;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsTurnLeft : 1;
 
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))

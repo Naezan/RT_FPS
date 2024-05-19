@@ -31,4 +31,7 @@ public:
 
 	virtual float GetYawAO() const { return 0.f; }
 	virtual float GetPitchAO() const { return 0.f; }
+	virtual float GetRotateYaw() const { return 0.f; }
+	virtual bool IsTurnRight() const { return false; }
+	virtual bool IsTurnLeft() const { return false; }
 };

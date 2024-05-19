@@ -339,12 +339,27 @@ void ARFCharacter::Look(const FInputActionValue& Value)
 
 void ARFCharacter::UpdateTurnInPlaceData_Implementation()
 {
-	FRotator DeltaAO = GetControlRotation() - GetActorRotation();
-	DeltaAO.Normalize();
+	FRotator DeltaRotation = GetBaseAimRotation() - GetActorRotation();
+	DeltaRotation.Normalize();
 
-	FRotator InterpAO = FMath::RInterpTo(GetControlRotation(), DeltaAO, GetWorld()->GetDeltaSeconds(), 3.f);
-	YawAO = FMath::Clamp(InterpAO.Yaw, -90.f, 90.f);
-	PitchAO = FMath::Clamp(InterpAO.Pitch, -90.f, 90.f);
+	FRotator InterpAO = FMath::RInterpTo(GetBaseAimRotation(), DeltaRotation, GetWorld()->GetDeltaSeconds(), 3.f);
+	//YawAO = InterpAO.Yaw;
+	PitchAO = FMath::Clamp(DeltaRotation.Pitch, -90.f, 90.f);
+
+	if (GetVelocity().GetSafeNormal2D().Length() > 0 || GetCharacterMovement()->IsFalling())
+	{
+		GetMesh()->SetAbsolute(false, false, false);
+		RotateYaw = InterpAO.Yaw;
+		bIsTurnRight = false;
+		bIsTurnLeft = false;
+	}
+	else
+	{
+		GetMesh()->SetAbsolute(false, true, false);
+		RotateYaw = DeltaRotation.Yaw;
+		//bIsTurnRight = InterpAO.Yaw > 90.f;
+		//bIsTurnLeft = InterpAO.Yaw < -90.f;
+	}
 }
 
 void ARFCharacter::SwitchCrouch(const FInputActionValue& Value)
@@ -771,4 +786,7 @@ void ARFCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, DeathStatus, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, YawAO, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, PitchAO, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, RotateYaw, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bIsTurnLeft, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bIsTurnRight, SharedParams);
 }

@@ -69,6 +69,9 @@ void URFAnimInstance::UpdateTurnInPlaceData()
 	{
 		YawAO = CharacterMeshInterface->GetYawAO();
 		PitchAO = CharacterMeshInterface->GetPitchAO();
+		RotateYaw = CharacterMeshInterface->GetRotateYaw();
+		bIsTurnRight = CharacterMeshInterface->IsTurnRight();
+		bIsTurnLeft = CharacterMeshInterface->IsTurnLeft();
 	}
 }
 
