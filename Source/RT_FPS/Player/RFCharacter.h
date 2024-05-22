@@ -123,6 +123,8 @@ public:
 	FORCEINLINE URFEquipmentComponent* GetEquipmentComponent() const { return EquipmentComponent; }
 	//~End Getter
 
+	virtual bool IsLHandIK() const override;
+
 	virtual float GetYawAO() const override { return YawAO; }
 	virtual float GetPitchAO() const override { return PitchAO; }
 	virtual float GetRotateYaw() const override { return RotateYaw; }

@@ -34,4 +34,6 @@ public:
 	virtual float GetRotateYaw() const { return 0.f; }
 	virtual bool IsTurnRight() const { return false; }
 	virtual bool IsTurnLeft() const { return false; }
+
+	virtual bool IsLHandIK() const { return false; }
 };

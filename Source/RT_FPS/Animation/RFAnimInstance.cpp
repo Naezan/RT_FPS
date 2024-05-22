@@ -28,6 +28,7 @@ void URFAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	UpdateVelocityData();
 	UpdateAccelerationData();
 	UpdateTurnInPlaceData();
+	UpdateIKData();
 	UpdateMovementStateData();
 }
 
@@ -72,6 +73,14 @@ void URFAnimInstance::UpdateTurnInPlaceData()
 		RotateYaw = CharacterMeshInterface->GetRotateYaw();
 		bIsTurnRight = CharacterMeshInterface->IsTurnRight();
 		bIsTurnLeft = CharacterMeshInterface->IsTurnLeft();
+	}
+}
+
+void URFAnimInstance::UpdateIKData()
+{
+	if (IRFMeshInterface* CharacterMeshInterface = Cast<IRFMeshInterface>(OwningCharacter))
+	{
+		bDoLHandIK = CharacterMeshInterface->IsLHandIK();
 	}
 }
 

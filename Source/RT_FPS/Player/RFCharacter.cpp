@@ -552,6 +552,14 @@ UAnimInstance* ARFCharacter::GetFPAnimInstance() const
 	return FPMesh ? FPMesh->GetAnimInstance() : nullptr;
 }
 
+bool ARFCharacter::IsLHandIK() const
+{
+	if(!AbilitySystemComponent.IsValid())
+		return false;
+
+	return !AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName(TEXT("Ability.Weapon.Reload"))));
+}
+
 void ARFCharacter::SetAiming_Implementation(bool bInAiming)
 {
 	bIsAiming = bInAiming;
