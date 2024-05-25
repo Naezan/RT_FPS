@@ -21,7 +21,7 @@ public:
 	virtual EThumbnailPrimType GetDefaultThumbnailPrimitiveType(UObject* Asset) const override;
 	virtual UClass* GetSupportedClass() const override;
 	// Function that specify an editor that opens when double-clicking Asset
-	//virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor = TSharedPtr<IToolkitHost>()) override;
+	virtual void OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor = TSharedPtr<IToolkitHost>()) override;
 
 private:
 	EAssetTypeCategories::Type AssetCategory = EAssetTypeCategories::Misc;

@@ -6,7 +6,7 @@ public class RecoilSystemEditor : ModuleRules
 	{
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "UnrealEd"});
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "UnrealEd", "SlateCore", "Slate"});
         PrivateDependencyModuleNames.AddRange(new string[] { "RecoilSystem"});
  
 		PublicIncludePaths.AddRange(new string[] {"RecoilSystemEditor/Public"});

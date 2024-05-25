@@ -2,6 +2,8 @@
 
 #include "AssetTypeActions_RecoilPatternAsset.h"
 #include "RecoilPatternAsset.h"
+#include "RecoilSystemEditor.h"
+#include "RecoilPatternAsset.h"
 
 FAssetTypeActions_RecoilPatternAsset::FAssetTypeActions_RecoilPatternAsset(EAssetTypeCategories::Type assetCategory)
 	: AssetCategory(assetCategory)
@@ -15,7 +17,7 @@ FText FAssetTypeActions_RecoilPatternAsset::GetName() const
 
 FColor FAssetTypeActions_RecoilPatternAsset::GetTypeColor() const
 {
-	return FColor::Turquoise;
+	return FColor::Orange;
 }
 
 uint32 FAssetTypeActions_RecoilPatternAsset::GetCategories()
@@ -31,4 +33,19 @@ EThumbnailPrimType FAssetTypeActions_RecoilPatternAsset::GetDefaultThumbnailPrim
 UClass* FAssetTypeActions_RecoilPatternAsset::GetSupportedClass() const
 {
 	return URecoilPatternAsset::StaticClass();
+}
+
+void FAssetTypeActions_RecoilPatternAsset::OpenAssetEditor(const TArray<UObject*>& InObjects, TSharedPtr<class IToolkitHost> EditWithinLevelEditor)
+{
+	FRecoilSystemEditor& RecoilEditorModule = FModuleManager::LoadModuleChecked<FRecoilSystemEditor>("RecoilSystemEditor");
+
+	EToolkitMode::Type ToolkitMode = EditWithinLevelEditor.IsValid() ? EToolkitMode::WorldCentric : EToolkitMode::Standalone;
+
+	for (auto& Obj : InObjects)
+	{
+		if (const auto RecoilAsset = Cast<URecoilPatternAsset>(Obj))
+		{
+			RecoilEditorModule.CreateRecoilPatternEditor(ToolkitMode, EditWithinLevelEditor, RecoilAsset);
+		}
+	}
 }

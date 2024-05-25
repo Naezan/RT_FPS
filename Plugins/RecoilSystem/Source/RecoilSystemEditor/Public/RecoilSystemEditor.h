@@ -13,4 +13,6 @@ class FRecoilSystemEditor : public IModuleInterface
 
 	/* Called when the module is unloaded */
 	virtual void ShutdownModule() override;
+
+	virtual TSharedRef<class RecoilPatternEditor> CreateRecoilPatternEditor(const EToolkitMode::Type Mode, const TSharedPtr<class IToolkitHost>& InitToolkitHost, class URecoilPatternAsset* RecoilPattern);
 };

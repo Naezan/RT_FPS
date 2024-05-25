@@ -7,5 +7,7 @@
 URecoilPatternAsset::URecoilPatternAsset(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	RecoilGrid = NewObject<URecoilGrid>(this, "RecoilGrid", RF_Transactional);
+	// RF_Public : 에디터에서 저장하기 위해 필요함
+	// RF_Transactional : Undo, Redo
+	RecoilGrid = NewObject<URecoilGrid>(this, "RecoilGrid", RF_Public | RF_Transactional);
 }
