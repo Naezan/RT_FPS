@@ -2,6 +2,7 @@
 #include "IAssetTools.h"
 #include "AssetTypeActions_RecoilPatternAsset.h"
 #include "RecoilPatternEditor.h"
+#include "RecoilEditorCommands.h"
 
 DEFINE_LOG_CATEGORY(RecoilSystemEditor);
 
@@ -19,6 +20,7 @@ void FRecoilSystemEditor::StartupModule()
 
 void FRecoilSystemEditor::ShutdownModule()
 {
+	FRecoilEditorCommands::Unregister();
 }
 
 TSharedRef<class RecoilPatternEditor> FRecoilSystemEditor::CreateRecoilPatternEditor(const EToolkitMode::Type Mode, const TSharedPtr<class IToolkitHost>& InitToolkitHost, URecoilPatternAsset* RecoilPattern)

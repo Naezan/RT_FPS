@@ -3,6 +3,9 @@
 
 #include "RecoilPatternEditor.h"
 #include "RecoilPatternAsset.h"
+#include "RecoilEditorCommands.h"
+#include "RecoilGrid.h"
+
 #include "SRecoilViewportWidget.h"
 #include "IStructureDetailsView.h"
 #include "Framework/Docking/TabManager.h"
@@ -21,6 +24,11 @@ RecoilPatternEditor::RecoilPatternEditor()
 
 void RecoilPatternEditor::InitRecoilPatternEditor(const EToolkitMode::Type Mode, const TSharedPtr<class IToolkitHost>& InitToolkitHost, URecoilPatternAsset* RecoilPattern)
 {
+	FRecoilEditorCommands::Register();
+	// 명령어 리스트 생성
+	CommandList = MakeShareable(new FUICommandList);
+	CommandList->MapAction(FRecoilEditorCommands::Get().AddDefaultPoint, FExecuteAction::CreateSP(this, &RecoilPatternEditor::AddPoint), FCanExecuteAction());
+	CommandList->MapAction(FRecoilEditorCommands::Get().DeleteSelectedPoint, FExecuteAction::CreateSP(this, &RecoilPatternEditor::RemovePoint), FCanExecuteAction::CreateSP(this, &RecoilPatternEditor::CanRemovePoint));
 
 	// 반동 위젯 생성
 	RecoilPatternWidget = SNew(SRecoilViewportWidget)
@@ -45,15 +53,20 @@ void RecoilPatternEditor::RegisterTabSpawners(const TSharedRef<class FTabManager
 	InTabManager->RegisterTabSpawner(RecoilWidgetTabId, FOnSpawnTab::CreateSP(this, &RecoilPatternEditor::SpawnTab_RecoilWidget))
 		.SetDisplayName(LOCTEXT("RecoilPatternGraph", "Recoil Pattern Graph"));
 
-	FDetailsViewArgs DetailsViewArgs;
-	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
-	DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
-	InTabManager->RegisterTabSpawner(DetailsTabId, FOnSpawnTab::CreateSP(this, &RecoilPatternEditor::SpawnTab_Details))
-		.SetDisplayName(LOCTEXT("RecoilEditorDetail", "Recoil Editor Detail"));
+	{
+		FDetailsViewArgs DetailsViewArgs;
+		DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
+		DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
+		InTabManager->RegisterTabSpawner(DetailsTabId, FOnSpawnTab::CreateSP(this, &RecoilPatternEditor::SpawnTab_Details))
+			.SetDisplayName(LOCTEXT("RecoilEditorDetail", "Recoil Editor Detail"));
+	}
 	
 	
-	InTabManager->RegisterTabSpawner(PointDetailsTabId, FOnSpawnTab::CreateSP(this, &RecoilPatternEditor::SpawnTab_PointDetails))
-		.SetDisplayName(LOCTEXT("RecoilPointDetail", "Recoil Point Detail"));
+	{
+		SelectedPointDetailsView = PropertyEditorModule.CreateStructureDetailView(FDetailsViewArgs(), FStructureDetailsViewArgs(), nullptr);
+		InTabManager->RegisterTabSpawner(PointDetailsTabId, FOnSpawnTab::CreateSP(this, &RecoilPatternEditor::SpawnTab_PointDetails))
+			.SetDisplayName(LOCTEXT("RecoilPointDetail", "Recoil Point Detail"));
+	}
 }
 
 void RecoilPatternEditor::UnregisterTabSpawners(const TSharedRef<class FTabManager>& InTabManager)
@@ -120,19 +133,57 @@ TSharedRef<SDockTab> RecoilPatternEditor::SpawnTab_PointDetails(const FSpawnTabA
 		];
 }
 
+URecoilPatternAsset* RecoilPatternEditor::GetRecoilPatternAsset() const
+{
+	return CastChecked<URecoilPatternAsset>(GetEditingObject());
+}
+
+URecoilGrid* RecoilPatternEditor::GetRecoilGrid() const
+{
+	const URecoilPatternAsset* RecoilAsset = GetRecoilPatternAsset();
+	return (RecoilAsset != nullptr) ? RecoilAsset->RecoilGrid : nullptr;
+}
+
+void RecoilPatternEditor::AddPoint()
+{
+	const FScopedTransaction Transaction(FText::FromString("Add Point"));
+
+	GetRecoilGrid()->AddPoint(FRecoilPoint());
+
+	//SelectedPoints.ClearSelection();
+	//SelectedPoints.AddPoint(Index);
+}
+
+void RecoilPatternEditor::RemovePoint()
+{
+	const FScopedTransaction Transaction(FText::FromString("Remove Point"));
+
+	/*for (int32 Index : SelectedPoints.GetAllPoints())
+	{
+		GetRecoilGrid()->RemovePoint(Index);
+	}*/
+
+	//SelectedPoints.ClearSelection();
+}
+
+bool RecoilPatternEditor::CanRemovePoint()
+{
+	return false;
+}
+
 const TSharedRef<FTabManager::FLayout> RecoilPatternEditor::CreateEditorLayout()
 {
-	return FTabManager::NewLayout("RecoilPatternEditor_Layout_v2")
+	return FTabManager::NewLayout("RecoilPatternEditor_Layout_v1")
 		->AddArea
 		(
 			FTabManager::NewPrimaryArea()->SetOrientation(Orient_Vertical)
 			->Split
 			(
+				// 에디터 구성
 				FTabManager::NewSplitter()->SetOrientation(Orient_Horizontal)
 				->Split
 				(
-					FTabManager::NewSplitter()
-					->SetOrientation(Orient_Vertical)
+					FTabManager::NewSplitter()->SetOrientation(Orient_Vertical)
 					->Split
 					(
 						// 뷰포트 추가
@@ -149,14 +200,10 @@ const TSharedRef<FTabManager::FLayout> RecoilPatternEditor::CreateEditorLayout()
 				)
 				->Split
 				(
-					FTabManager::NewSplitter()->SetOrientation(Orient_Vertical)
-					->Split
-					(
-						// 디테일 창 추가
-						FTabManager::NewStack()
-						->SetSizeCoefficient(0.3f)
-						->AddTab(DetailsTabId, ETabState::OpenedTab)
-					)
+					// 뷰포트 디테일 창 추가
+					FTabManager::NewStack()
+					->SetSizeCoefficient(0.3f)
+					->AddTab(DetailsTabId, ETabState::OpenedTab)
 				)
 			)
 		);

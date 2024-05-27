@@ -28,6 +28,14 @@ public:
 	TSharedRef<SDockTab> SpawnTab_Details(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_PointDetails(const FSpawnTabArgs& Args);
 
+	URecoilPatternAsset* GetRecoilPatternAsset() const;
+	class URecoilGrid* GetRecoilGrid() const;
+
+protected:
+	void AddPoint();
+	void RemovePoint();
+	bool CanRemovePoint();
+
 private:
 	const TSharedRef<FTabManager::FLayout> CreateEditorLayout();
 
@@ -38,6 +46,9 @@ private:
 
 	// 리코일패턴 뷰포트
 	TSharedPtr<class SRecoilViewportWidget> RecoilPatternWidget;
+
+	// 애셋 에디터용 명령어
+	TSharedPtr<class FUICommandList> CommandList;
 
 	static const FName EditorAppIdentifier;
 
