@@ -18,6 +18,8 @@ public:
 	// Recoil Pattern index starting from 1
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Point")
 	int32 Index;
+
+	static constexpr int32 PointSize = 24.f;
 };
 
 /**

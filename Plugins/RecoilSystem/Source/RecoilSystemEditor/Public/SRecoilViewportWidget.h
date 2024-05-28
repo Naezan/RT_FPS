@@ -34,13 +34,19 @@ public:
 	//virtual FReply OnKeyUp(const FGeometry& InMyGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual void OnMouseLeave(const FPointerEvent& InMouseEvent) override;
 
+public:
+	class URecoilPatternAsset* GetRecoilAsset() const;
+
 private:
+	void PaintPoints(const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle) const;
 	void PaintDragBox(const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId) const;
 
 	bool IsDragging() const;
 	bool IsDragSet() const;
 	void ResetDrag();
 
+	FVector2D GetPointTopLeftLocation(const struct FRecoilPoint& InPoint) const;
+	FVector2D GetPointCenterLocation(const struct FRecoilPoint& InPoint) const;
 
 protected:
 	/** The location of mouse during the last OnMouseButtonDown callback in widget local coordinates. */

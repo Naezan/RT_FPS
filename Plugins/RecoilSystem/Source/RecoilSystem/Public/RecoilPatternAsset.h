@@ -18,6 +18,8 @@ class RECOILSYSTEM_API URecoilPatternAsset : public UObject
 public:
 	URecoilPatternAsset(const FObjectInitializer& ObjectInitializer);
 
+	class URecoilGrid* GetRecoilGrid() const;
+
 public:
 	UPROPERTY()
 	class URecoilGrid* RecoilGrid;

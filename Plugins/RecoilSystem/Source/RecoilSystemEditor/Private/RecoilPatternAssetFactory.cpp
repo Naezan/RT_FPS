@@ -3,6 +3,7 @@
 
 #include "RecoilPatternAssetFactory.h"
 #include "RecoilPatternAsset.h"
+#include "RecoilGrid.h"
 
 URecoilPatternAssetFactory::URecoilPatternAssetFactory(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -14,7 +15,15 @@ URecoilPatternAssetFactory::URecoilPatternAssetFactory(const FObjectInitializer&
 
 UObject* URecoilPatternAssetFactory::FactoryCreateNew(UClass* InClass, UObject* InParent, FName InName, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn)
 {
-	return NewObject<URecoilPatternAsset>(InParent, InClass, InName, Flags);;
+	URecoilPatternAsset* const RecoilAsset = NewObject<URecoilPatternAsset>(InParent, InClass, InName, Flags);
+	URecoilGrid* const RecoilGridInfo = RecoilAsset->RecoilGrid;
+	check(RecoilGridInfo != nullptr);
+
+	RecoilGridInfo->AddPoint(FRecoilPoint(FVector2D(0.5f, 1.f)));
+	RecoilGridInfo->AddPoint(FRecoilPoint(FVector2D(1.3f, 5.f)));
+	RecoilGridInfo->AddPoint(FRecoilPoint(FVector2D(0.8f, 10.f)));
+
+	return RecoilAsset;
 }
 
 FText URecoilPatternAssetFactory::GetToolTip() const

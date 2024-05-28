@@ -11,3 +11,8 @@ URecoilPatternAsset::URecoilPatternAsset(const FObjectInitializer& ObjectInitial
 	// RF_Transactional : Undo, Redo
 	RecoilGrid = NewObject<URecoilGrid>(this, "RecoilGrid", RF_Public | RF_Transactional);
 }
+
+URecoilGrid* URecoilPatternAsset::GetRecoilGrid() const
+{
+	return RecoilGrid;
+}

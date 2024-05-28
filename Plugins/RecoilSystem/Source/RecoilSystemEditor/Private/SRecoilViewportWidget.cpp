@@ -3,6 +3,9 @@
 
 #include "SRecoilViewportWidget.h"
 #include "SlateOptMacros.h"
+#include "RecoilPatternEditor.h"
+#include "RecoilPatternAsset.h"
+#include "RecoilGrid.h"
 #include "RecoilBackgroundPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Layout/Children.h"
@@ -30,8 +33,7 @@ int32 SRecoilViewportWidget::OnPaint(const FPaintArgs& Args, const FGeometry& Al
 {
 	LayerId = SCompoundWidget::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
 
-	//DrawPoints(AllottedGeometry, MyCullingRect, OutDrawElements, ++LayerId);
-	//DrawPointNumbers(AllottedGeometry, MyCullingRect, OutDrawElements, ++LayerId);
+	PaintPoints(AllottedGeometry, MyCullingRect, OutDrawElements, ++LayerId, InWidgetStyle);
 
 	if (IsDragging())
 	{
@@ -91,6 +93,72 @@ void SRecoilViewportWidget::OnMouseLeave(const FPointerEvent& InMouseEvent)
 	ResetDrag();
 }
 
+URecoilPatternAsset* SRecoilViewportWidget::GetRecoilAsset() const
+{
+	return RecoilEditor.IsValid() ? RecoilEditor.Pin()->GetRecoilPatternAsset() : nullptr;
+}
+
+void SRecoilViewportWidget::PaintPoints(const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle) const
+{
+	const URecoilPatternAsset* RecoilAsset = GetRecoilAsset();
+	URecoilGrid* RecoilGrid = RecoilAsset->GetRecoilGrid();
+	
+	for (int32 i = 0; i < RecoilGrid->GetPointsNum(); i++)
+	{
+		const FRecoilPoint& RecoilPoint = RecoilGrid->GetPoint(i);
+		FVector2D TopLeftPoint = GetPointTopLeftLocation(RecoilPoint);
+		FVector2D CenterPoint = GetPointCenterLocation(RecoilPoint);
+		
+		{
+			const bool bIsSelected = false; /*GetUnitsSelection().HasSelectionUnit(recoilUnit.Id);*/
+			const FSlateBrush* PointBrush = bIsSelected ? FAppStyle::GetBrush("CurveEd.CurveKeySelected") : FAppStyle::GetBrush("CurveEd.CurveKey");
+
+			FSlateDrawElement::MakeBox(
+				OutDrawElements,
+				LayerId,
+				AllottedGeometry.ToPaintGeometry(TopLeftPoint, FVector2D(FRecoilPoint::PointSize)),
+				PointBrush,
+				ESlateDrawEffect::None,
+				PointBrush->GetTint(InWidgetStyle));
+		}
+		
+		{
+			FVector2D NumberDrawPoint = TopLeftPoint;
+			NumberDrawPoint.X += FRecoilPoint::PointSize * 2;
+
+			FFontOutlineSettings OutlineSettings;
+			OutlineSettings.OutlineColor = FLinearColor::Black;
+			OutlineSettings.OutlineSize = 2;
+			FSlateDrawElement::MakeText(
+				OutDrawElements,
+				LayerId,
+				AllottedGeometry.ToPaintGeometry(NumberDrawPoint, FVector2D(FRecoilPoint::PointSize)),
+				FString::FromInt(i),
+				FCoreStyle::GetDefaultFontStyle("Bold", 8),
+				ESlateDrawEffect::None,
+				FLinearColor::White);
+		}
+
+		if(i > 0)
+		{
+			const FRecoilPoint& PrevRecoilPoint = RecoilGrid->GetPoint(i - 1);
+
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LayerId,
+				AllottedGeometry.ToPaintGeometry(),
+				{
+					GetPointCenterLocation(PrevRecoilPoint),
+					CenterPoint,
+				},
+				ESlateDrawEffect::None,
+				FLinearColor::White,
+				true,
+				2.f);
+		}
+	}
+}
+
 void SRecoilViewportWidget::PaintDragBox(const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId) const
 {
 	FVector2D MarqueTopLeft
@@ -129,6 +197,20 @@ void SRecoilViewportWidget::ResetDrag()
 {
 	MouseDownLocation = FVector2D::ZeroVector;
 	MouseMoveLocation = FVector2D::ZeroVector;
+}
+
+FVector2D SRecoilViewportWidget::GetPointTopLeftLocation(const FRecoilPoint& InPoint) const
+{
+	FVector2D CenterLocation = GetPointCenterLocation(InPoint);
+	return CenterLocation - FRecoilPoint::PointSize / 2.f;
+}
+
+FVector2D SRecoilViewportWidget::GetPointCenterLocation(const FRecoilPoint& InPoint) const
+{
+	FVector2D InverseLocation = InPoint.PointCoord;
+	InverseLocation.Y *= -1.f;
+
+	return BackgroundPanel->GraphCoordToPanelCoord(InverseLocation * 16.f);
 }
 
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION
