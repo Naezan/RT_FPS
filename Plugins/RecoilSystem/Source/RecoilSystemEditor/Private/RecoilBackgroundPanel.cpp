@@ -120,4 +120,9 @@ int32 RecoilBackgroundPanel::OnPaint(const FPaintArgs& Args, const FGeometry& Al
 	return SNodePanel::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
 }
 
+void RecoilBackgroundPanel::SetViewOffset(FVector2D InViewOffset)
+{
+	ViewOffset = InViewOffset;
+}
+
 #undef LOCTEXT_NAMESPACE

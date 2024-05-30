@@ -7,6 +7,8 @@
 #include "RecoilPatternAsset.h"
 #include "RecoilGrid.h"
 #include "RecoilBackgroundPanel.h"
+#include "RecoilEditorCommands.h"
+
 #include "Widgets/SOverlay.h"
 #include "Layout/Children.h"
 #include "Layout/Visibility.h"
@@ -35,7 +37,7 @@ int32 SRecoilViewportWidget::OnPaint(const FPaintArgs& Args, const FGeometry& Al
 
 	PaintPoints(AllottedGeometry, MyCullingRect, OutDrawElements, ++LayerId, InWidgetStyle);
 
-	if (IsDragging())
+	if (DragBoxEvent.IsDragging())
 	{
 		PaintDragBox(AllottedGeometry, MyCullingRect, OutDrawElements, ++LayerId);
 	}
@@ -44,39 +46,79 @@ int32 SRecoilViewportWidget::OnPaint(const FPaintArgs& Args, const FGeometry& Al
 }
 FReply SRecoilViewportWidget::OnMouseButtonDown(const FGeometry& InMyGeometry, const FPointerEvent& InMouseEvent)
 {
-	ResetDrag();
+	DragBoxEvent.ResetDrag();
 
 	const bool bLeftMouseButton = InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton;
+	const bool bRightMouseButton = InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton;
 
 	if (bLeftMouseButton)
 	{
-		MouseDownLocation = InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition());
-		MouseMoveLocation = InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition());
+		DragBoxEvent = FViewportMouseEvent(
+			InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition()),
+			InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition()));
+	}
+	else if (bRightMouseButton)
+	{
+		ViewportDragEvent = FViewportMouseEvent(
+			InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition()),
+			InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition()));
 	}
 
 	return FReply::Handled();
 }
 FReply SRecoilViewportWidget::OnMouseButtonUp(const FGeometry& InMyGeometry, const FPointerEvent& InMouseEvent)
 {
-	if (IsDragging() && IsDragSet())
+	if (ViewportDragEvent.IsMoveDrag())
 	{
-		ResetDrag();
+		ViewportDragEvent.ResetDrag();
+
 		return FReply::Handled();
 	}
 
-	ResetDrag();
+	// Create add point menu
+	if (InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
+	{
+		FMenuBuilder MenuBuilder(/*bShouldCloseWindowAfterMenuSelection=*/ true, /*CommandList=*/ RecoilEditor.Pin()->GetCommandList());
+
+		MenuBuilder.BeginSection("RecoilGraph", FText::FromString(TEXT("Recoil Options")));
+		{
+			MenuBuilder.AddMenuEntry(FRecoilEditorCommands::Get().AddDefaultPoint, NAME_None);
+			MenuBuilder.AddMenuEntry(FRecoilEditorCommands::Get().DeleteSelectedPoint, NAME_None);
+		}
+		MenuBuilder.EndSection();
+
+		FSlateApplication::Get().PushMenu(
+			AsShared(),
+			FWidgetPath(),
+			MenuBuilder.MakeWidget(),
+			FSlateApplication::Get().GetCursorPos(),
+			FPopupTransitionEffect(FPopupTransitionEffect::ContextMenu));
+	}
+
+	DragBoxEvent.ResetDrag();
+	ViewportDragEvent.ResetDrag();
 
 	return FReply::Handled();
 }
 FReply SRecoilViewportWidget::OnMouseMove(const FGeometry& InMyGeometry, const FPointerEvent& InMouseEvent)
 {
 	const bool bLeftMouseButton = InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton;
+	const bool bRightMouseButton = InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton;
 
-	if (IsDragging() || bLeftMouseButton)
+	if (DragBoxEvent.IsDragging() || bLeftMouseButton)
 	{
-		MouseMoveLocation = InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition());
+		DragBoxEvent.SetMoveLocation(InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition()));
 
 		//TODO Rect안에 있는지 체크 후, Selection배열에 추가
+	}
+
+	if (ViewportDragEvent.IsDragging() || bRightMouseButton)
+	{
+		ViewportDragEvent.SetMoveLocation(InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition()));
+
+		const FVector2D CursorDelta = InMouseEvent.GetCursorDelta();
+		const FVector2D CurViewOffset = BackgroundPanel->GetViewOffset() - CursorDelta / BackgroundPanel->GetZoomAmount();
+		BackgroundPanel->SetViewOffset(CurViewOffset);
 	}
 
 	return SCompoundWidget::OnMouseMove(InMyGeometry, InMouseEvent);
@@ -90,7 +132,7 @@ void SRecoilViewportWidget::OnMouseLeave(const FPointerEvent& InMouseEvent)
 {
 	SCompoundWidget::OnMouseLeave(InMouseEvent);
 
-	ResetDrag();
+	DragBoxEvent.ResetDrag();
 }
 
 URecoilPatternAsset* SRecoilViewportWidget::GetRecoilAsset() const
@@ -102,13 +144,14 @@ void SRecoilViewportWidget::PaintPoints(const FGeometry& AllottedGeometry, const
 {
 	const URecoilPatternAsset* RecoilAsset = GetRecoilAsset();
 	URecoilGrid* RecoilGrid = RecoilAsset->GetRecoilGrid();
-	
+
 	for (int32 i = 0; i < RecoilGrid->GetPointsNum(); i++)
 	{
 		const FRecoilPoint& RecoilPoint = RecoilGrid->GetPoint(i);
 		FVector2D TopLeftPoint = GetPointTopLeftLocation(RecoilPoint);
 		FVector2D CenterPoint = GetPointCenterLocation(RecoilPoint);
-		
+
+		// Draw Points
 		{
 			const bool bIsSelected = false; /*GetUnitsSelection().HasSelectionUnit(recoilUnit.Id);*/
 			const FSlateBrush* PointBrush = bIsSelected ? FAppStyle::GetBrush("CurveEd.CurveKeySelected") : FAppStyle::GetBrush("CurveEd.CurveKey");
@@ -121,7 +164,8 @@ void SRecoilViewportWidget::PaintPoints(const FGeometry& AllottedGeometry, const
 				ESlateDrawEffect::None,
 				PointBrush->GetTint(InWidgetStyle));
 		}
-		
+
+		// Draw Point Texts
 		{
 			FVector2D NumberDrawPoint = TopLeftPoint;
 			NumberDrawPoint.X += FRecoilPoint::PointSize * 2;
@@ -139,7 +183,8 @@ void SRecoilViewportWidget::PaintPoints(const FGeometry& AllottedGeometry, const
 				FLinearColor::White);
 		}
 
-		if(i > 0)
+		// Draw Point line
+		if (i > 0)
 		{
 			const FRecoilPoint& PrevRecoilPoint = RecoilGrid->GetPoint(i - 1);
 
@@ -163,14 +208,14 @@ void SRecoilViewportWidget::PaintDragBox(const FGeometry& AllottedGeometry, cons
 {
 	FVector2D MarqueTopLeft
 	(
-		FMath::Min(MouseDownLocation.X, MouseMoveLocation.X),
-		FMath::Min(MouseDownLocation.Y, MouseMoveLocation.Y)
+		FMath::Min(DragBoxEvent.MouseDownLocation.X, DragBoxEvent.MouseMoveLocation.X),
+		FMath::Min(DragBoxEvent.MouseDownLocation.Y, DragBoxEvent.MouseMoveLocation.Y)
 	);
 
 	FVector2D MarqueBottomRight
 	(
-		FMath::Max(MouseDownLocation.X, MouseMoveLocation.X),
-		FMath::Max(MouseDownLocation.Y, MouseMoveLocation.Y)
+		FMath::Max(DragBoxEvent.MouseDownLocation.X, DragBoxEvent.MouseMoveLocation.X),
+		FMath::Max(DragBoxEvent.MouseDownLocation.Y, DragBoxEvent.MouseMoveLocation.Y)
 	);
 
 	const FSlateRect SelectionRect(MarqueTopLeft, MarqueBottomRight);
@@ -181,22 +226,6 @@ void SRecoilViewportWidget::PaintDragBox(const FGeometry& AllottedGeometry, cons
 		AllottedGeometry.ToPaintGeometry(SelectionRect.GetTopLeft(), SelectionRect.GetSize()),
 		FAppStyle::GetBrush(TEXT("MarqueeSelection"))
 	);
-}
-
-bool SRecoilViewportWidget::IsDragging() const
-{
-	return !MouseDownLocation.IsNearlyZero() || !MouseMoveLocation.IsNearlyZero();
-}
-
-bool SRecoilViewportWidget::IsDragSet() const
-{
-	return !MouseDownLocation.IsNearlyZero() && !MouseMoveLocation.IsNearlyZero();
-}
-
-void SRecoilViewportWidget::ResetDrag()
-{
-	MouseDownLocation = FVector2D::ZeroVector;
-	MouseMoveLocation = FVector2D::ZeroVector;
 }
 
 FVector2D SRecoilViewportWidget::GetPointTopLeftLocation(const FRecoilPoint& InPoint) const
@@ -214,3 +243,24 @@ FVector2D SRecoilViewportWidget::GetPointCenterLocation(const FRecoilPoint& InPo
 }
 
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION
+
+bool FViewportMouseEvent::IsDragging() const
+{
+	return !MouseDownLocation.IsNearlyZero() || !MouseMoveLocation.IsNearlyZero();
+}
+
+bool FViewportMouseEvent::IsValidDrag() const
+{
+	return !MouseDownLocation.IsNearlyZero() && !MouseMoveLocation.IsNearlyZero();
+}
+
+bool FViewportMouseEvent::IsMoveDrag() const
+{
+	return !MouseDownLocation.Equals(MouseMoveLocation);
+}
+
+void FViewportMouseEvent::ResetDrag()
+{
+	MouseDownLocation = FVector2D::ZeroVector;
+	MouseMoveLocation = FVector2D::ZeroVector;
+}

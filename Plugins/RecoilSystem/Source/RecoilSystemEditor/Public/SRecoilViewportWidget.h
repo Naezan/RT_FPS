@@ -9,6 +9,30 @@
 class RecoilPatternEditor;
 class RecoilBackgroundPanel;
 
+struct FViewportMouseEvent
+{
+public:
+	FViewportMouseEvent() :
+		MouseDownLocation(FVector2D::ZeroVector), MouseMoveLocation(FVector2D::ZeroVector)
+	{}
+	FViewportMouseEvent(FVector2D MouseDownLoc, FVector2D MouseMoveLoc) :
+		MouseDownLocation(MouseDownLoc), MouseMoveLocation(MouseMoveLoc)
+	{}
+
+	bool IsDragging() const;
+	bool IsValidDrag() const;
+	bool IsMoveDrag() const;
+	void ResetDrag();
+
+	void SetMoveLocation(FVector2D InMoveLocation) { MouseMoveLocation = InMoveLocation; }
+
+	/** The location of mouse during the last OnMouseButtonDown callback in widget local coordinates. */
+	FVector2D MouseDownLocation;
+
+	/** The location of the mouse during the last OnMouseMove callback in widget local coordinates. */
+	FVector2D MouseMoveLocation;
+};
+
 /**
  * 
  */
@@ -41,19 +65,12 @@ private:
 	void PaintPoints(const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle) const;
 	void PaintDragBox(const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId) const;
 
-	bool IsDragging() const;
-	bool IsDragSet() const;
-	void ResetDrag();
-
 	FVector2D GetPointTopLeftLocation(const struct FRecoilPoint& InPoint) const;
 	FVector2D GetPointCenterLocation(const struct FRecoilPoint& InPoint) const;
 
 protected:
-	/** The location of mouse during the last OnMouseButtonDown callback in widget local coordinates. */
-	FVector2D MouseDownLocation;
-
-	/** The location of the mouse during the last OnMouseMove callback in widget local coordinates. */
-	FVector2D MouseMoveLocation;
+	FViewportMouseEvent DragBoxEvent;
+	FViewportMouseEvent ViewportDragEvent;
 
 private:
 	TWeakPtr<RecoilPatternEditor> RecoilEditor;

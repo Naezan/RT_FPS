@@ -19,7 +19,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Point")
 	int32 Index;
 
-	static constexpr int32 PointSize = 24.f;
+	static constexpr int32 PointSize = 12.f;
 };
 
 /**

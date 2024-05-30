@@ -7,10 +7,12 @@
 #include "RecoilParameter.h"
 #include "RecoilPatternAsset.generated.h"
 
+struct FRecoilPoint;
+
 /**
  * 
  */
-UCLASS()
+UCLASS(BlueprintType)
 class RECOILSYSTEM_API URecoilPatternAsset : public UObject
 {
 	GENERATED_BODY()
@@ -19,6 +21,9 @@ public:
 	URecoilPatternAsset(const FObjectInitializer& ObjectInitializer);
 
 	class URecoilGrid* GetRecoilGrid() const;
+
+	int32 GetRecoilPointsNum() const;
+	FRecoilPoint GetRecoilPointAt(int32 RecoilIndex) const;
 
 public:
 	UPROPERTY()

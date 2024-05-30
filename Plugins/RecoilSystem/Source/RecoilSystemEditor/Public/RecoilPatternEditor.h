@@ -30,6 +30,7 @@ public:
 
 	URecoilPatternAsset* GetRecoilPatternAsset() const;
 	class URecoilGrid* GetRecoilGrid() const;
+	TSharedRef<class FUICommandList> GetCommandList() const;
 
 protected:
 	void AddPoint();
@@ -48,7 +49,7 @@ private:
 	TSharedPtr<class SRecoilViewportWidget> RecoilPatternWidget;
 
 	// 애셋 에디터용 명령어
-	TSharedPtr<class FUICommandList> CommandList;
+	TSharedRef<class FUICommandList> CommandList;
 
 	static const FName EditorAppIdentifier;
 

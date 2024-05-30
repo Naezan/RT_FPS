@@ -9,6 +9,7 @@
 #include "SRecoilViewportWidget.h"
 #include "IStructureDetailsView.h"
 #include "Framework/Docking/TabManager.h"
+#include "Framework/Commands/UICommandList.h"
 
 #define LOCTEXT_NAMESPACE "RecoilPatternEditor"
 
@@ -18,15 +19,16 @@ const FName RecoilPatternEditor::RecoilWidgetTabId("RecoilPattern Widget");
 const FName RecoilPatternEditor::DetailsTabId("RecoilPattern Details");
 const FName RecoilPatternEditor::PointDetailsTabId("RecoilPattern PointDetails");
 
-RecoilPatternEditor::RecoilPatternEditor()
+RecoilPatternEditor::RecoilPatternEditor() :
+	CommandList(MakeShared<FUICommandList>())
 {
 }
 
 void RecoilPatternEditor::InitRecoilPatternEditor(const EToolkitMode::Type Mode, const TSharedPtr<class IToolkitHost>& InitToolkitHost, URecoilPatternAsset* RecoilPattern)
 {
 	FRecoilEditorCommands::Register();
+
 	// 명령어 리스트 생성
-	CommandList = MakeShareable(new FUICommandList);
 	CommandList->MapAction(FRecoilEditorCommands::Get().AddDefaultPoint, FExecuteAction::CreateSP(this, &RecoilPatternEditor::AddPoint), FCanExecuteAction());
 	CommandList->MapAction(FRecoilEditorCommands::Get().DeleteSelectedPoint, FExecuteAction::CreateSP(this, &RecoilPatternEditor::RemovePoint), FCanExecuteAction::CreateSP(this, &RecoilPatternEditor::CanRemovePoint));
 
@@ -142,6 +144,11 @@ URecoilGrid* RecoilPatternEditor::GetRecoilGrid() const
 {
 	const URecoilPatternAsset* RecoilAsset = GetRecoilPatternAsset();
 	return (RecoilAsset != nullptr) ? RecoilAsset->RecoilGrid : nullptr;
+}
+
+TSharedRef<FUICommandList> RecoilPatternEditor::GetCommandList() const
+{
+	return CommandList;
 }
 
 void RecoilPatternEditor::AddPoint()
