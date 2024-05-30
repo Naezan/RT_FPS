@@ -13,17 +13,17 @@
 	"CanContainContent": true,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
-	"Installed": false,
+	"Installed": true,
 	"Modules": [
 		{
 			"Name": "RecoilSystem",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PreDefault"
 		},
 		{
 			"name": "RecoilSystemEditor",
 			"type": "Editor",
-			"loadingPhase": "PostEngineInit"
+			"loadingPhase": "Default"
 		}
 	]
 }
