@@ -49,6 +49,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FRecoilPoint& GetPoint(int32 Index);
+	UFUNCTION(BlueprintCallable)
+	FRecoilPoint& GetPointByKey(FGuid Key);
 
 	UFUNCTION(BlueprintCallable)
 	bool IsValidPoint(int32 Index) const;

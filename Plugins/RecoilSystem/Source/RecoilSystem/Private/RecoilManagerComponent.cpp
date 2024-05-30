@@ -27,15 +27,16 @@ void URecoilManagerComponent::TriggerRecoil()
 	FRotator RecoilRotation = GetRecoilDeltaRotation(RecoilIndex);
 
 	const FRotator CurControlRotation = GetControlRotation().GetNormalized();
+	const FRotator TargetRecoilRotation = CurControlRotation + RecoilRotation;
 
 	RecoilSpeed = FMath::FInterpConstantTo(RecoilSpeed, RecoilPatternAsset->RecoilInterpParams.MaxRecoilSpeed, GetWorld()->GetDeltaSeconds(), RecoilPatternAsset->RecoilInterpParams.RecoilInterpSpeed);
-	FRotator TargetControlRotation = FMath::QInterpConstantTo(CurControlRotation.Quaternion(), TargetControlRotation.Quaternion(), GetWorld()->GetDeltaSeconds(), RecoilSpeed).Rotator().GetNormalized();
-	TargetControlRotation.Roll = 0.f;
+	FRotator DesireControlRotation = FMath::QInterpConstantTo(CurControlRotation.Quaternion(), TargetRecoilRotation.Quaternion(), GetWorld()->GetDeltaSeconds(), RecoilSpeed).Rotator().GetNormalized();
+	DesireControlRotation.Roll = 0.f;
 
-	const FRotator TargetDeltaRotation = (TargetControlRotation - CurControlRotation).GetNormalized();
+	const FRotator DeltaRotation = (DesireControlRotation - CurControlRotation).GetNormalized();
 
-	RepliactedRecoilRotation = CurControlRotation + TargetDeltaRotation;
-	SetControlRotation(CurControlRotation + TargetDeltaRotation);
+	RepliactedRecoilRotation = CurControlRotation + DeltaRotation;
+	SetControlRotation(RepliactedRecoilRotation);
 
 	++RecoilIndex;
 }
@@ -97,7 +98,7 @@ FRotator URecoilManagerComponent::GetRecoilDeltaRotation(int32 InRecoilIndex) co
 	}
 
 	const FRecoilPoint CurRecoilPoint = RecoilPatternAsset->GetRecoilPointAt(InRecoilIndex);
-	const FRecoilPoint PrevRecoilPoint = InRecoilIndex > 0 ? RecoilPatternAsset->GetRecoilPointAt(InRecoilIndex) : FRecoilPoint();
+	const FRecoilPoint PrevRecoilPoint = InRecoilIndex > 0 ? RecoilPatternAsset->GetRecoilPointAt(InRecoilIndex - 1) : FRecoilPoint();
 	
 	const FVector2D DeltaRecoilRotation = CurRecoilPoint.PointCoord - PrevRecoilPoint.PointCoord;
 

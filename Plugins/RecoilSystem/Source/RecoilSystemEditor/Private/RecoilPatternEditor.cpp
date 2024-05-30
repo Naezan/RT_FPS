@@ -42,7 +42,6 @@ void RecoilPatternEditor::InitRecoilPatternEditor(const EToolkitMode::Type Mode,
 	const bool bCreateDefaultStandaloneMenu = true;
 	const bool bCreateDefaultToolbar = true;
 	FAssetEditorToolkit::InitAssetEditor(Mode, InitToolkitHost, EditorAppIdentifier, EditorDefaultLayout, bCreateDefaultStandaloneMenu, bCreateDefaultToolbar, RecoilPattern);
-
 }
 
 void RecoilPatternEditor::RegisterTabSpawners(const TSharedRef<class FTabManager>& InTabManager)
@@ -66,6 +65,8 @@ void RecoilPatternEditor::RegisterTabSpawners(const TSharedRef<class FTabManager
 	
 	{
 		SelectedPointDetailsView = PropertyEditorModule.CreateStructureDetailView(FDetailsViewArgs(), FStructureDetailsViewArgs(), nullptr);
+
+		SelectedPointDetailsView->GetOnFinishedChangingPropertiesDelegate().AddSP(this, &RecoilPatternEditor::OnFinishedSelectedPoint);
 		InTabManager->RegisterTabSpawner(PointDetailsTabId, FOnSpawnTab::CreateSP(this, &RecoilPatternEditor::SpawnTab_PointDetails))
 			.SetDisplayName(LOCTEXT("RecoilPointDetail", "Recoil Point Detail"));
 	}
@@ -161,12 +162,16 @@ void RecoilPatternEditor::AddSelectedPoint(FGuid IndexKey)
 	if (!SelectedPoints.Contains(IndexKey))
 	{
 		SelectedPoints.Add(IndexKey);
+
+		OnSelectPointChanged();
 	}
 }
 
 void RecoilPatternEditor::ClearSelectedPoints()
 {
 	SelectedPoints.Empty();
+
+	OnSelectPointChanged();
 }
 
 bool RecoilPatternEditor::HasAnySelectedPoints() const
@@ -204,6 +209,28 @@ void RecoilPatternEditor::RemovePoint()
 bool RecoilPatternEditor::CanRemovePoint()
 {
 	return SelectedPoints.Num() > 0;
+}
+
+void RecoilPatternEditor::OnFinishedSelectedPoint(const FPropertyChangedEvent& PropertyChangedEvent)
+{
+	OnSelectPointChanged();
+}
+
+void RecoilPatternEditor::OnSelectPointChanged()
+{
+	if (!SelectedPoints.IsEmpty())
+	{
+		const FGuid SelectedKey = SelectedPoints[0];
+		FRecoilPoint& RecoilPoint = GetRecoilGrid()->GetPointByKey(SelectedKey);
+
+		SelectedPointDetailsScope.Reset();
+		SelectedPointDetailsScope = MakeShareable(new FStructOnScope(FRecoilPoint::StaticStruct(), reinterpret_cast<uint8*>(&RecoilPoint)));
+		SelectedPointDetailsView->SetStructureData(SelectedPointDetailsScope);
+	}
+	else
+	{
+		SelectedPointDetailsView->SetStructureData(nullptr);
+	}
 }
 
 const TSharedRef<FTabManager::FLayout> RecoilPatternEditor::CreateEditorLayout()

@@ -14,8 +14,8 @@ public:
 	FRecoilParameter() {}
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters", meta = (UIMin = "0", ClampMin = "0"))
-	float MaxRecoilSpeed = 1.f;
+	float MaxRecoilSpeed = 15.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters", meta = (UIMin = "0", ClampMin = "0"))
-	float RecoilInterpSpeed = 1.f;
+	float RecoilInterpSpeed = 20.f;
 };

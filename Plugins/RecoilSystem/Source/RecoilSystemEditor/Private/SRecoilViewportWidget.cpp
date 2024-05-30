@@ -57,9 +57,23 @@ FReply SRecoilViewportWidget::OnMouseButtonDown(const FGeometry& InMyGeometry, c
 		const FRecoilPoint FoundPoint = FindPointUnderMouse(InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition()));
 		if (!FoundPoint.Hash.IsValid())
 		{
+			bStartDragPoint = false;
+
 			DragBoxEvent = FViewportMouseEvent(
 				InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition()),
 				InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition()));
+		}
+		else
+		{
+			bStartDragPoint = true;
+
+			// 포인트 추가
+			if (!RecoilEditor.Pin()->HasSelectedPoint(FoundPoint.Hash))
+			{
+				RecoilEditor.Pin()->ClearSelectedPoints();
+
+				RecoilEditor.Pin()->AddSelectedPoint(FoundPoint.Hash);
+			}
 		}
 	}
 	else if (bRightMouseButton)
@@ -82,7 +96,7 @@ FReply SRecoilViewportWidget::OnMouseButtonUp(const FGeometry& InMyGeometry, con
 
 	if (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
 	{
-
+		bStartDragPoint = false;
 	}
 	// Create add point menu
 	else if (InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
@@ -132,8 +146,19 @@ FReply SRecoilViewportWidget::OnMouseMove(const FGeometry& InMyGeometry, const F
 	{
 		DragBoxEvent.SetMoveLocation(InMyGeometry.AbsoluteToLocal(InMouseEvent.GetScreenSpacePosition()));
 
-		//TODO Rect안에 있는지 체크 후, Selection배열에 추가
-		const FSlateRect DragBoxRect(DragBoxEvent.MouseDownLocation, DragBoxEvent.MouseMoveLocation);
+		FVector2D DragTopLeft
+		(
+			FMath::Min(DragBoxEvent.MouseDownLocation.X, DragBoxEvent.MouseMoveLocation.X),
+			FMath::Min(DragBoxEvent.MouseDownLocation.Y, DragBoxEvent.MouseMoveLocation.Y)
+		);
+
+		FVector2D DragBottomRight
+		(
+			FMath::Max(DragBoxEvent.MouseDownLocation.X, DragBoxEvent.MouseMoveLocation.X),
+			FMath::Max(DragBoxEvent.MouseDownLocation.Y, DragBoxEvent.MouseMoveLocation.Y)
+		);
+
+		const FSlateRect DragBoxRect(DragTopLeft, DragBottomRight);
 
 		if (const URecoilPatternAsset* RecoilAsset = GetRecoilAsset())
 		{
@@ -148,6 +173,25 @@ FReply SRecoilViewportWidget::OnMouseMove(const FGeometry& InMyGeometry, const F
 					{
 						RecoilEditor.Pin()->AddSelectedPoint(RecoilPoint.Hash);
 					}
+				}
+			}
+		}
+	}
+	
+	// 포인트 이동
+	if (bStartDragPoint || bLeftMouseButton)
+	{
+		FVector2D MoveLocDelta = LocalToAbsolutePoint(InMouseEvent.GetScreenSpacePosition()) - LocalToAbsolutePoint(InMouseEvent.GetLastScreenSpacePosition());
+
+		if (const URecoilPatternAsset* RecoilAsset = GetRecoilAsset())
+		{
+			for (int32 i = 0; i < RecoilAsset->GetRecoilPointsNum(); i++)
+			{
+				FRecoilPoint& RecoilPoint = const_cast<FRecoilPoint&>(RecoilAsset->GetRecoilPointAt(i));
+
+				if (RecoilEditor.Pin()->HasSelectedPoint(RecoilPoint.Hash))
+				{
+					RecoilPoint.PointCoord += MoveLocDelta;
 				}
 			}
 		}
@@ -173,6 +217,7 @@ void SRecoilViewportWidget::OnMouseLeave(const FPointerEvent& InMouseEvent)
 {
 	SCompoundWidget::OnMouseLeave(InMouseEvent);
 
+	bStartDragPoint = false;
 	DragBoxEvent.ResetDrag();
 }
 
@@ -196,8 +241,8 @@ void SRecoilViewportWidget::PaintPoints(const FGeometry& AllottedGeometry, const
 	for (int32 i = 0; i < RecoilGrid->GetPointsNum(); i++)
 	{
 		const FRecoilPoint& RecoilPoint = RecoilGrid->GetPoint(i);
-		FVector2D TopLeftPoint = GetPointTopLeftLocation(RecoilPoint);
-		FVector2D CenterPoint = GetPointCenterLocation(RecoilPoint);
+		FVector2D TopLeftPoint = GetPointTopLeftLocation(RecoilPoint.PointCoord);
+		FVector2D CenterPoint = GetPointCenterLocation(RecoilPoint.PointCoord);
 
 		// Draw Points
 		{
@@ -241,7 +286,7 @@ void SRecoilViewportWidget::PaintPoints(const FGeometry& AllottedGeometry, const
 				LayerId,
 				AllottedGeometry.ToPaintGeometry(),
 				{
-					GetPointCenterLocation(PrevRecoilPoint),
+					GetPointCenterLocation(PrevRecoilPoint.PointCoord),
 					CenterPoint,
 				},
 				ESlateDrawEffect::None,
@@ -286,7 +331,7 @@ const FRecoilPoint& SRecoilViewportWidget::FindPointUnderMouse(FVector2D MousePo
 	for (int32 i = 0; i < RecoilAsset->GetRecoilPointsNum(); i++)
 	{
 		const FRecoilPoint& RecoilPoint = RecoilAsset->GetRecoilPointAt(i);
-		FVector2D CenterPoint = GetPointCenterLocation(RecoilPoint);
+		FVector2D CenterPoint = GetPointCenterLocation(RecoilPoint.PointCoord);
 
 		if (MouseRect.ContainsPoint(CenterPoint))
 		{
@@ -299,22 +344,29 @@ const FRecoilPoint& SRecoilViewportWidget::FindPointUnderMouse(FVector2D MousePo
 
 FSlateRect SRecoilViewportWidget::GetPointRect(const FRecoilPoint& InPoint) const
 {
-	FVector2D CenterLocation = GetPointCenterLocation(InPoint);
+	FVector2D CenterLocation = GetPointCenterLocation(InPoint.PointCoord);
 	return FSlateRect::FromPointAndExtent(CenterLocation - (FRecoilPoint::PointSize / 2.f), FVector2D(FRecoilPoint::PointSize));
 }
 
-FVector2D SRecoilViewportWidget::GetPointTopLeftLocation(const FRecoilPoint& InPoint) const
+FVector2D SRecoilViewportWidget::GetPointTopLeftLocation(const FVector2D& InPoint) const
 {
 	FVector2D CenterLocation = GetPointCenterLocation(InPoint);
 	return CenterLocation - FRecoilPoint::PointSize / 2.f;
 }
 
-FVector2D SRecoilViewportWidget::GetPointCenterLocation(const FRecoilPoint& InPoint) const
+FVector2D SRecoilViewportWidget::GetPointCenterLocation(const FVector2D& InPoint) const
 {
-	FVector2D InverseLocation = InPoint.PointCoord;
+	FVector2D InverseLocation = InPoint;
 	InverseLocation.Y *= -1.f;
 
 	return BackgroundPanel->GraphCoordToPanelCoord(InverseLocation * 16.f);
+}
+
+FVector2D SRecoilViewportWidget::LocalToAbsolutePoint(const FVector2D& InPoint) const
+{
+	FVector2D InverseLocation = BackgroundPanel->PanelCoordToGraphCoord(InPoint) / 16.f;
+	InverseLocation.Y *= -1.f;
+	return InverseLocation;
 }
 
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION

@@ -48,6 +48,21 @@ FRecoilPoint& URecoilGrid::GetPoint(int32 Index)
 	return RecoilPoint;
 }
 
+FRecoilPoint& URecoilGrid::GetPointByKey(FGuid Key)
+{
+	static FRecoilPoint RecoilPoint;
+
+	for (int32 i = 0; i < RecoilPoints.Num(); i++)
+	{
+		if (RecoilPoints[i].Hash == Key)
+		{
+			return RecoilPoints[i];
+		}
+	}
+
+	return RecoilPoint;
+}
+
 bool URecoilGrid::IsValidPoint(int32 Index) const
 {
 	return RecoilPoints.IsValidIndex(Index);

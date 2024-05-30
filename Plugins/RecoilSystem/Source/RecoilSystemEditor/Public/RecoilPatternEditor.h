@@ -42,6 +42,8 @@ protected:
 	void AddPoint();
 	void RemovePoint();
 	bool CanRemovePoint();
+	void OnFinishedSelectedPoint(const FPropertyChangedEvent& PropertyChangedEvent);
+	void OnSelectPointChanged();
 
 private:
 	const TSharedRef<FTabManager::FLayout> CreateEditorLayout();
@@ -50,6 +52,7 @@ private:
 	// 디테일 뷰
 	TSharedPtr<class IDetailsView> DetailsView;
 	TSharedPtr<class IStructureDetailsView> SelectedPointDetailsView;
+	TSharedPtr<class FStructOnScope> SelectedPointDetailsScope;
 
 	// 리코일패턴 뷰포트
 	TSharedPtr<class SRecoilViewportWidget> RecoilPatternWidget;

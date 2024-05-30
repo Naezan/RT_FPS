@@ -69,8 +69,9 @@ private:
 	const FRecoilPoint& FindPointUnderMouse(FVector2D MousePosition);
 
 	FSlateRect GetPointRect(const FRecoilPoint& InPoint) const;
-	FVector2D GetPointTopLeftLocation(const FRecoilPoint& InPoint) const;
-	FVector2D GetPointCenterLocation(const FRecoilPoint& InPoint) const;
+	FVector2D GetPointTopLeftLocation(const FVector2D& InPoint) const;
+	FVector2D GetPointCenterLocation(const FVector2D& InPoint) const;
+	FVector2D LocalToAbsolutePoint(const FVector2D& InPoint) const;
 
 protected:
 	FViewportMouseEvent DragBoxEvent;
@@ -80,4 +81,6 @@ private:
 	TWeakPtr<RecoilPatternEditor> RecoilEditor;
 
 	TSharedPtr<RecoilBackgroundPanel> BackgroundPanel;
+
+	uint8 bStartDragPoint : 1;
 };
