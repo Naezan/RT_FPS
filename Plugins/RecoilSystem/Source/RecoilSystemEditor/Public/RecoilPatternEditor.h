@@ -31,6 +31,12 @@ public:
 	URecoilPatternAsset* GetRecoilPatternAsset() const;
 	class URecoilGrid* GetRecoilGrid() const;
 	TSharedRef<class FUICommandList> GetCommandList() const;
+	TArray<FGuid>& GetSelectedPoints();
+
+	void AddSelectedPoint(FGuid IndexKey);
+	void ClearSelectedPoints();
+	bool HasAnySelectedPoints() const;
+	bool HasSelectedPoint(FGuid IndexKey) const;
 
 protected:
 	void AddPoint();
@@ -50,6 +56,8 @@ private:
 
 	// 애셋 에디터용 명령어
 	TSharedRef<class FUICommandList> CommandList;
+
+	TArray<FGuid> SelectedPoints;
 
 	static const FName EditorAppIdentifier;
 

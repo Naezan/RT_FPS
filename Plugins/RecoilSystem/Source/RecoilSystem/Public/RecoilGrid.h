@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "Misc/Guid.h"
 #include "RecoilGrid.generated.h"
 
 USTRUCT(BlueprintType)
@@ -12,12 +13,16 @@ struct RECOILSYSTEM_API FRecoilPoint
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Point")
-	FVector2D PointCoord = FVector2D::ZeroVector;
+	FRecoilPoint();
+	FRecoilPoint(FVector2D InPoint) : PointCoord(InPoint)
+	{}
 
-	// Recoil Pattern index starting from 1
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Point")
+	FVector2D PointCoord;
+
+	// Recoil Pattern hash
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Point")
-	int32 Index;
+	FGuid Hash;
 
 	static constexpr int32 PointSize = 12.f;
 };
@@ -32,10 +37,12 @@ class RECOILSYSTEM_API URecoilGrid : public UObject
 
 public:
 	UFUNCTION(BlueprintCallable)
-	void AddPoint(const FRecoilPoint& InPoint);
+	FGuid AddPoint(const FRecoilPoint& InPoint);
 
 	UFUNCTION(BlueprintCallable)
 	void RemovePoint(int32 Index);
+	UFUNCTION(BlueprintCallable)
+	void RemovePointByKey(FGuid Key);
 
 	UFUNCTION(BlueprintCallable)
 	void RemoveAll();

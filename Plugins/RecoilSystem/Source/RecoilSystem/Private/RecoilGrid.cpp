@@ -3,15 +3,29 @@
 
 #include "RecoilGrid.h"
 
-void URecoilGrid::AddPoint(const FRecoilPoint& InPoint)
+FGuid URecoilGrid::AddPoint(const FRecoilPoint& InPoint)
 {
 	FRecoilPoint& InsertedPoint = RecoilPoints.Insert_GetRef(InPoint, RecoilPoints.Num());
-	InsertedPoint.Index = RecoilPoints.Num();
+	InsertedPoint.Hash = FGuid::NewGuid();
+
+	return InsertedPoint.Hash;
 }
 
 void URecoilGrid::RemovePoint(int32 Index)
 {
 	RecoilPoints.RemoveAt(Index);
+}
+
+void URecoilGrid::RemovePointByKey(FGuid Key)
+{
+	for (int32 i = 0; i < RecoilPoints.Num(); i++)
+	{
+		if (RecoilPoints[i].Hash == Key)
+		{
+			RecoilPoints.RemoveAt(i);
+			break;
+		}
+	}
 }
 
 void URecoilGrid::RemoveAll()
@@ -52,4 +66,10 @@ int32 URecoilGrid::GetPointsNum() const
 const TArray<FRecoilPoint>& URecoilGrid::GetPoints() const
 {
 	return RecoilPoints;
+}
+
+FRecoilPoint::FRecoilPoint()
+{
+	PointCoord = FVector2D::ZeroVector;
+	Hash.Invalidate();
 }

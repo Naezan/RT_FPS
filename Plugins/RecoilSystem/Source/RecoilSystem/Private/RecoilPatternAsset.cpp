@@ -22,7 +22,8 @@ int32 URecoilPatternAsset::GetRecoilPointsNum() const
 	return RecoilGrid ? RecoilGrid->GetPointsNum() : 0;
 }
 
-FRecoilPoint URecoilPatternAsset::GetRecoilPointAt(int32 RecoilIndex) const
+const FRecoilPoint& URecoilPatternAsset::GetRecoilPointAt(int32 RecoilIndex) const
 {
-	return RecoilGrid ? RecoilGrid->GetPoint(RecoilIndex) : FRecoilPoint();
+	static FRecoilPoint TempRecoilPoint;
+	return RecoilGrid ? RecoilGrid->GetPoint(RecoilIndex) : TempRecoilPoint;
 }

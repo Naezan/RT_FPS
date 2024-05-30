@@ -23,7 +23,7 @@ public:
 	class URecoilGrid* GetRecoilGrid() const;
 
 	int32 GetRecoilPointsNum() const;
-	FRecoilPoint GetRecoilPointAt(int32 RecoilIndex) const;
+	const FRecoilPoint& GetRecoilPointAt(int32 RecoilIndex) const;
 
 public:
 	UPROPERTY()

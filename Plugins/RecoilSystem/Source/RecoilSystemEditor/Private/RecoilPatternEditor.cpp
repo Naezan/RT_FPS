@@ -151,31 +151,59 @@ TSharedRef<FUICommandList> RecoilPatternEditor::GetCommandList() const
 	return CommandList;
 }
 
+TArray<FGuid>& RecoilPatternEditor::GetSelectedPoints()
+{
+	return SelectedPoints;
+}
+
+void RecoilPatternEditor::AddSelectedPoint(FGuid IndexKey)
+{
+	if (!SelectedPoints.Contains(IndexKey))
+	{
+		SelectedPoints.Add(IndexKey);
+	}
+}
+
+void RecoilPatternEditor::ClearSelectedPoints()
+{
+	SelectedPoints.Empty();
+}
+
+bool RecoilPatternEditor::HasAnySelectedPoints() const
+{
+	return SelectedPoints.Num() > 0;
+}
+
+bool RecoilPatternEditor::HasSelectedPoint(FGuid IndexKey) const
+{
+	return SelectedPoints.Contains(IndexKey);
+}
+
 void RecoilPatternEditor::AddPoint()
 {
 	const FScopedTransaction Transaction(FText::FromString("Add Point"));
 
-	GetRecoilGrid()->AddPoint(FRecoilPoint());
+	FGuid AddedKey = GetRecoilGrid()->AddPoint(FRecoilPoint());
 
-	//SelectedPoints.ClearSelection();
-	//SelectedPoints.AddPoint(Index);
+	SelectedPoints.Empty();
+	SelectedPoints.Add(AddedKey);
 }
 
 void RecoilPatternEditor::RemovePoint()
 {
 	const FScopedTransaction Transaction(FText::FromString("Remove Point"));
 
-	/*for (int32 Index : SelectedPoints.GetAllPoints())
+	for (FGuid SelectedKey : SelectedPoints)
 	{
-		GetRecoilGrid()->RemovePoint(Index);
-	}*/
+		GetRecoilGrid()->RemovePointByKey(SelectedKey);
+	}
 
-	//SelectedPoints.ClearSelection();
+	SelectedPoints.Empty();
 }
 
 bool RecoilPatternEditor::CanRemovePoint()
 {
-	return false;
+	return SelectedPoints.Num() > 0;
 }
 
 const TSharedRef<FTabManager::FLayout> RecoilPatternEditor::CreateEditorLayout()

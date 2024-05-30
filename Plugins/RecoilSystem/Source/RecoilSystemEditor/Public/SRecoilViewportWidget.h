@@ -8,6 +8,7 @@
 
 class RecoilPatternEditor;
 class RecoilBackgroundPanel;
+struct FRecoilPoint;
 
 struct FViewportMouseEvent
 {
@@ -60,13 +61,16 @@ public:
 
 public:
 	class URecoilPatternAsset* GetRecoilAsset() const;
+	TArray<FGuid>& GetSelectedRecoilPoints();
 
 private:
 	void PaintPoints(const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle) const;
 	void PaintDragBox(const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId) const;
+	const FRecoilPoint& FindPointUnderMouse(FVector2D MousePosition);
 
-	FVector2D GetPointTopLeftLocation(const struct FRecoilPoint& InPoint) const;
-	FVector2D GetPointCenterLocation(const struct FRecoilPoint& InPoint) const;
+	FSlateRect GetPointRect(const FRecoilPoint& InPoint) const;
+	FVector2D GetPointTopLeftLocation(const FRecoilPoint& InPoint) const;
+	FVector2D GetPointCenterLocation(const FRecoilPoint& InPoint) const;
 
 protected:
 	FViewportMouseEvent DragBoxEvent;
