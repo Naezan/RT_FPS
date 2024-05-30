@@ -2,7 +2,7 @@
 
 
 #include "ProceduralAnimComponent.h"
-#include "RFCharacter.h"
+#include "Player/RFCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"

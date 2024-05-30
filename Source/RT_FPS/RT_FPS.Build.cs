@@ -14,7 +14,7 @@ public class RT_FPS : ModuleRules
         "GameplayAbilities", "GameplayTags", "GameplayTasks", "AIModule" });
 
         PrivateDependencyModuleNames.AddRange(
-            new string[] { "NetCore" }
+            new string[] { "NetCore", "RecoilSystem" }
         );
     }
 }

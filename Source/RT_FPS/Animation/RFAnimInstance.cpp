@@ -28,6 +28,7 @@ void URFAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 	UpdateVelocityData();
 	UpdateAccelerationData();
 	UpdateTurnInPlaceData();
+	UpdateIKData();
 	UpdateMovementStateData();
 }
 
@@ -65,12 +66,22 @@ void URFAnimInstance::UpdateTurnInPlaceData()
 	// Update YawOffset
 	YawOffset = Delta.Yaw;
 
-	FRotator DeltaAO = OwningCharacter->GetControlRotation() - OwningCharacter->GetActorRotation();
-	DeltaAO.Normalize();
+	if (IRFMeshInterface* CharacterMeshInterface = Cast<IRFMeshInterface>(OwningCharacter))
+	{
+		YawAO = CharacterMeshInterface->GetYawAO();
+		PitchAO = CharacterMeshInterface->GetPitchAO();
+		RotateYaw = CharacterMeshInterface->GetRotateYaw();
+		bIsTurnRight = CharacterMeshInterface->IsTurnRight();
+		bIsTurnLeft = CharacterMeshInterface->IsTurnLeft();
+	}
+}
 
-	FRotator InterpAO = FMath::RInterpTo(OwningCharacter->GetControlRotation(), DeltaAO, GetWorld()->GetDeltaSeconds(), 3.f);
-	YawAO = FMath::Clamp(InterpAO.Yaw, -90.f, 90.f);
-	PitchAO = FMath::Clamp(InterpAO.Pitch, -90.f, 90.f);
+void URFAnimInstance::UpdateIKData()
+{
+	if (IRFMeshInterface* CharacterMeshInterface = Cast<IRFMeshInterface>(OwningCharacter))
+	{
+		bDoLHandIK = CharacterMeshInterface->IsLHandIK();
+	}
 }
 
 void URFAnimInstance::UpdateMovementStateData()

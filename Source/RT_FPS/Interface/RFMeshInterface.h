@@ -28,4 +28,12 @@ public:
 	virtual USkeletalMeshComponent* GetFPMesh() const { return nullptr; }
 	virtual USkeletalMeshComponent* GetFPLegMesh() const { return nullptr; }
 	virtual UAnimInstance* GetFPAnimInstance() const { return nullptr; }
+
+	virtual float GetYawAO() const { return 0.f; }
+	virtual float GetPitchAO() const { return 0.f; }
+	virtual float GetRotateYaw() const { return 0.f; }
+	virtual bool IsTurnRight() const { return false; }
+	virtual bool IsTurnLeft() const { return false; }
+
+	virtual bool IsLHandIK() const { return false; }
 };

@@ -3,8 +3,8 @@
 
 #include "AbilitySystem/RFGameplayAbility.h"
 #include "AbilitySystem/RFAbilitySystemComponent.h"
-#include "RFWeaponInstance.h"
-#include "RFEquipmentComponent.h"
+#include "Weapon/RFWeaponInstance.h"
+#include "Player/Component/RFEquipmentComponent.h"
 
 URFGameplayAbility::URFGameplayAbility(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

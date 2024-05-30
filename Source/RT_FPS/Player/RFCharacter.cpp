@@ -2,7 +2,7 @@
 
 
 #include "RFCharacter.h"
-#include "RFWeaponInstance.h"
+#include "Weapon/RFWeaponInstance.h"
 #include "RFPlayerState.h"
 #include "RFPlayerData.h"
 #include "RFLogMacros.h"
@@ -21,8 +21,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "RFEquipmentComponent.h"
-#include "ProceduralAnimComponent.h"
+#include "Component/RFEquipmentComponent.h"
+#include "Component/ProceduralAnimComponent.h"
 #include "Interface/GameStateGlobalDelegateInterface.h"
 #include "Components/TimelineComponent.h"
 
@@ -332,6 +332,33 @@ void ARFCharacter::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+
+		UpdateTurnInPlaceData();
+	}
+}
+
+void ARFCharacter::UpdateTurnInPlaceData_Implementation()
+{
+	FRotator DeltaRotation = GetBaseAimRotation() - GetActorRotation();
+	DeltaRotation.Normalize();
+
+	FRotator InterpAO = FMath::RInterpTo(GetBaseAimRotation(), DeltaRotation, GetWorld()->GetDeltaSeconds(), 3.f);
+	//YawAO = InterpAO.Yaw;
+	PitchAO = FMath::Clamp(DeltaRotation.Pitch, -90.f, 90.f);
+
+	if (GetVelocity().GetSafeNormal2D().Length() > 0 || GetCharacterMovement()->IsFalling())
+	{
+		GetMesh()->SetAbsolute(false, false, false);
+		RotateYaw = InterpAO.Yaw;
+		bIsTurnRight = false;
+		bIsTurnLeft = false;
+	}
+	else
+	{
+		GetMesh()->SetAbsolute(false, true, false);
+		RotateYaw = DeltaRotation.Yaw;
+		//bIsTurnRight = InterpAO.Yaw > 90.f;
+		//bIsTurnLeft = InterpAO.Yaw < -90.f;
 	}
 }
 
@@ -523,6 +550,14 @@ UAnimInstance* ARFCharacter::GetFPAnimInstance() const
 {
 	const USkeletalMeshComponent* FPMesh = GetFPMesh();
 	return FPMesh ? FPMesh->GetAnimInstance() : nullptr;
+}
+
+bool ARFCharacter::IsLHandIK() const
+{
+	if(!AbilitySystemComponent.IsValid())
+		return false;
+
+	return !AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName(TEXT("Ability.Weapon.Reload"))));
 }
 
 void ARFCharacter::SetAiming_Implementation(bool bInAiming)
@@ -757,4 +792,9 @@ void ARFCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bHasWeapon, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bIsAiming, SharedParams);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, DeathStatus, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, YawAO, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, PitchAO, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, RotateYaw, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bIsTurnLeft, SharedParams);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, bIsTurnRight, SharedParams);
 }

@@ -110,7 +110,7 @@ void URFWeaponInstance::SpawnWeapon()
 	GetPawn(), 
 	GetCharacterTPMesh(), 
 	FAttachmentTransformRules::SnapToTargetNotIncludingScale, 
-	WeaponAttachSocketName);
+		TPWeaponAttachSocketName);
 }
 
 void URFWeaponInstance::SpawnWeaponMagazine()
