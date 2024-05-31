@@ -27,6 +27,7 @@ void URFAnimInstance::NativeThreadSafeUpdateAnimation(float DeltaSeconds)
 
 	UpdateVelocityData();
 	UpdateAccelerationData();
+	UpdateAimOffsetData();
 	UpdateTurnInPlaceData();
 	UpdateIKData();
 	UpdateMovementStateData();
@@ -55,24 +56,60 @@ void URFAnimInstance::UpdateAccelerationData()
 	bHasAcceleration = !FMath::IsNearlyZero(LastAcceleration2D.SizeSquared2D());
 }
 
-void URFAnimInstance::UpdateTurnInPlaceData()
+void URFAnimInstance::UpdateAimOffsetData()
 {
-	BaseAnimRotation = OwningCharacter->GetBaseAimRotation();
-
-	// Diff with movement direction and animation direction
-	FRotator Delta = FRotationMatrix::MakeFromX(Velocity).Rotator() - BaseAnimRotation;
-	Delta.Normalize();
-
-	// Update YawOffset
-	YawOffset = Delta.Yaw;
-
 	if (IRFMeshInterface* CharacterMeshInterface = Cast<IRFMeshInterface>(OwningCharacter))
 	{
 		YawAO = CharacterMeshInterface->GetYawAO();
 		PitchAO = CharacterMeshInterface->GetPitchAO();
-		RotateYaw = CharacterMeshInterface->GetRotateYaw();
-		bIsTurnRight = CharacterMeshInterface->IsTurnRight();
-		bIsTurnLeft = CharacterMeshInterface->IsTurnLeft();
+	}
+}
+
+void URFAnimInstance::UpdateTurnInPlaceData()
+{
+	BaseAnimRotation = OwningCharacter->GetBaseAimRotation();
+	FRotator DeltaRotator = FRotationMatrix::MakeFromX(LastMoveDirection).Rotator() - BaseAnimRotation;
+	DeltaRotator.Normalize();
+
+	if (GroundSpeed > 0.f)
+	{
+		YawOffset = 0.f;
+	}
+	else if (!bIsTurning)
+	{
+		if ((!bIsTurnRight && !bIsTurnLeft))
+		{
+			LastMoveDirection = (!!GroundSpeed) ? Velocity * FVector(1, 1, 0) : LastMoveDirection;
+			LastMoveDirection.Normalize();
+
+			YawOffset = DeltaRotator.Yaw;
+		}
+		else
+		{
+			bIsTurning = true;
+		}
+
+		ClampedYaw = FMath::Clamp(DeltaRotator.Yaw, -90.f, 90.f);
+
+		bIsTurnRight = ClampedYaw < -70.f;
+		bIsTurnLeft = ClampedYaw > 70.f;
+	}
+
+	if (bIsTurning)
+	{
+		YawElapseTime += GetWorld()->GetDeltaSeconds();
+
+		LastMoveDirection = FMath::VInterpTo(LastMoveDirection, OwningCharacter->GetActorForwardVector(), GetWorld()->GetDeltaSeconds(), 5.f);
+		YawOffset = FMath::FInterpTo(YawOffset, 0.f, GetWorld()->GetDeltaSeconds(), 4.f);
+
+		if (FMath::IsNearlyEqual(YawOffset, 0.f) || YawElapseTime > 0.4f)
+		{
+			LastMoveDirection = OwningCharacter->GetActorForwardVector();
+			YawOffset = 0.f;
+
+			bIsTurning = false;
+			YawElapseTime = 0.f;
+		}
 	}
 }
 

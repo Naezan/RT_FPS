@@ -23,6 +23,7 @@ protected:
 private:
 	void UpdateVelocityData();
 	void UpdateAccelerationData();
+	void UpdateAimOffsetData();
 	void UpdateTurnInPlaceData();
 	void UpdateIKData();
 	void UpdateMovementStateData();
@@ -65,6 +66,8 @@ private:
 	uint8 bIsFalling : 1;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsCrouching : 1;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	uint8 bIsTurning : 1;
 	// animation mesh direction
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	FRotator BaseAnimRotation;
@@ -72,11 +75,15 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	float YawOffset;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	float ClampedYaw;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	float YawAO;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	float PitchAO;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	float RotateYaw;
+	FVector LastMoveDirection;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	float YawElapseTime;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	uint8 bIsTurnRight : 1;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
