@@ -87,6 +87,7 @@ ARFCharacter::ARFCharacter()
 	// Stop draw shadow on 1p mesh
 	Mesh1P->bCastDynamicShadow = false;
 	Mesh1P->CastShadow = false;
+	Mesh1P->bSelfShadowOnly = true;
 	Mesh1P->SetRelativeLocation(FVector(-8.0f, 0.0f, -165.5f));
 	Mesh1P->SetRelativeRotation(FRotator(0.f, -90.0f, 0.f));
 
